@@ -69,6 +69,7 @@ class HomePageView(flet.Column):
             color=flet.Colors.ERROR,
             visible=False,
         )
+        self.login_progress = flet.ProgressBar(visible=False)
 
         # self.feedback_history = flet.ListView(
         #     expand=False,
@@ -81,6 +82,7 @@ class HomePageView(flet.Column):
             self.mt5_button,
             self.login_button,
             self.logout_button,
+            self.login_progress,
         ]
 
     # def show_feedback(self, message, is_error=False):
@@ -101,8 +103,12 @@ class HomePageView(flet.Column):
             self.localdb_button.text = "Launch local server"
             # self.show_feedback("LocalDB stopped successfully.")
         else:
+            self.login_progress.visible = True
+            self.update()
             start_pocketbase()
+            self.login_progress.visible = False
             store.set_local_db(True)
+            self.update()
             self.localdb_button.text = "Local server is running"
             # self.show_feedback("LocalDB launched successfully.")
 

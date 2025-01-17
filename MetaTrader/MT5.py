@@ -20,7 +20,7 @@ class MetaTrader:
             Mt5.shutdown()
         else:
             print('You are connected to your MetaTrader account.')
-            self.connect()
+            return self.connect()
             
             
     def connect(self):
@@ -29,6 +29,7 @@ class MetaTrader:
             if   self.username != "":
                 self.authorized= Mt5.login(self.username)
                 store.Mt5_authorized=self.authorized
+                return self.authorized
             else :
                 print('Please provide your MetaTrader 5 account number and password.')
                 return False
@@ -38,8 +39,10 @@ class MetaTrader:
         if not self.authorized:
             print('Login failed, check your account number and password.')
             Mt5.shutdown()
+            return self.authorized
         else:
             print('You are connected to your MetaTrader account.')
+            return self.authorized
     
     def     get_account_info(self):
     # The `get_account_info` method in the `MetaTrader` class is a function that retrieves and
@@ -129,8 +132,8 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        order_data =None
-        while order_data is None:
+        order_data =[]
+        while len(order_data) ==0:
             order_data= self.get_position_by_ticket(ticket)
         return order_data
     def sell(self, symbol, volume,magic, sl,tp,sltp_type,slippage,comment=None):
@@ -185,8 +188,8 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        order_data =None
-        while order_data is None:
+        order_data =[]
+        while len(order_data) ==0: 
             order_data= self.get_position_by_ticket(ticket)
         return order_data
     def get_position_by_ticket(self,ticket):
@@ -250,8 +253,8 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        order_data =None
-        while order_data is None:
+        order_data =[]
+        while len(order_data) ==0:
             order_data= self.get_order_by_ticket(ticket)
         return order_data
         
@@ -302,8 +305,8 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        order_data =None
-        while order_data is None:
+        order_data =[]
+        while len(order_data) ==0:
             order_data= self.get_order_by_ticket(ticket)
         return order_data
         
@@ -355,8 +358,8 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        order_data =None
-        while order_data is None:
+        order_data =[]
+        while len(order_data) ==0:
             order_data= self.get_order_by_ticket(ticket)
         return order_data
         
@@ -408,8 +411,8 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        order_data =None
-        while order_data is None:
+        order_data =[]
+        while len(order_data) ==0:
             order_data= self.get_order_by_ticket(ticket)
         return order_data
         
