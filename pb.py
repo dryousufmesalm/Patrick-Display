@@ -35,7 +35,9 @@ def launch_pocketbase():
         local_password = '1223334444'
         userdata=local_auth.login_as_admin(local_user,local_password)
         if userdata is None:
-            return False
+            print("Failed to login to local server")
+            print("Please Try Again")
+            return
         print("PocketBase is running...")
 
 

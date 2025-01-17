@@ -129,7 +129,7 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        return self.get_position_by_ticket(ticket)
+        return ticket
     def sell(self, symbol, volume,magic, sl,tp,sltp_type,slippage,comment=None):
         """ Sell a symbol """
         symbol_info = Mt5.symbol_info(symbol)
@@ -182,7 +182,7 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        return self.get_position_by_ticket(ticket)
+        return ticket
     def get_position_by_ticket(self,ticket):
         """ Get a position by its ticket """
         return Mt5.positions_get(ticket=ticket)
@@ -244,7 +244,7 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        return self.get_order_by_ticket(ticket)
+        return ticket
     
     # sell stop
     
@@ -293,7 +293,7 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        return self.get_order_by_ticket(ticket)
+        return ticket
         
     # buy limit
     
@@ -342,7 +342,7 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        return self.get_order_by_ticket(ticket)
+        return ticket
     
     # sell limit
     
@@ -391,7 +391,7 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        return self.get_order_by_ticket(ticket)
+        return ticket
     
     # close position
     def close_position(self,order, deviation):
