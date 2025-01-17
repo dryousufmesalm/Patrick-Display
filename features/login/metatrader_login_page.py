@@ -120,15 +120,14 @@ class LoginPageView(flet.Column):
         
         self.login_progress.visible = False
         self.update()
-        if result[0]:
+        if result:
             # TODO: navigate to the home page
             app_logger.info("Login successful, navigating to home page")
             AppRouter.change_route(AppRoutes.HOME)
             local_auth.set_mt5_credintials(data)
-            if result[1]:
-                app_logger.info(msg=result[1])
+            
         else:
-            app_logger.error(msg=f"Login failed: {result[1]}")
+            app_logger.error(msg=f"Login failed")
     def load_saved_credentials(self):
         try:
             # Assuming `local_auth` has a method `get_credentials` returning a dict with keys 'username' and 'password'

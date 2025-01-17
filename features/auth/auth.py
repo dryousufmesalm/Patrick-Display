@@ -72,17 +72,16 @@ async def launch_metatrader(username: str, password: str, server: str, program_p
     try:
         # ******* Do other stuff Here ********
         expert = MetaTrader( username, password , server)
-        expert.initialize(program_path)
-        
-        # return success status and messge
-        return (True, "Metatrader launched successfully")
-
+        logged=expert.initialize(program_path)
+        acc=expert.get_account_info()
+        print(acc)
+        return logged   
     except Exception as e:
         # Show snackbar with the error message
         AppRouter.snackbar("Metatrader launch failed!")
         # log the error
         app_logger.error(f"Metatrader launch failed: {e}")
-        return (False, "Metatrader launch failed")
+        return False
 
 def set_app_token(token: str):
     """Set the token in the AppState

@@ -19,16 +19,17 @@ class MetaTrader:
             print('Initialization failed, check internet connection. You must have Meta Trader 5 installed.')
             Mt5.shutdown()
         else:
-            print('You are connected to your MetaTrader account.')
-            self.connect()
-            
+            launched =self.connect()
+        return launched
             
     def connect(self):
         """ Connect to the MetaTrader 5 account """
         if self.server == ""  or self.password == "" :
-            if   self.username != "":
-                self.authorized= Mt5.login(self.username)
+            if  self.username != "":
+                self.authorized= Mt5.login(login=self.username)
                 store.Mt5_authorized=self.authorized
+                return self.authorized
+                 
             else :
                 print('Please provide your MetaTrader 5 account number and password.')
                 return False
@@ -38,8 +39,10 @@ class MetaTrader:
         if not self.authorized:
             print('Login failed, check your account number and password.')
             Mt5.shutdown()
+            return False
         else:
             print('You are connected to your MetaTrader account.')
+            return True
     
     def     get_account_info(self):
     # The `get_account_info` method in the `MetaTrader` class is a function that retrieves and
