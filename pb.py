@@ -3,6 +3,7 @@ import os
 import threading
 from features.globals.app_state import AppState
 from Api.LocalDB import API as LocalAPI
+import time
 local_url = "http://127.0.0.1:8090"
 
 
@@ -28,16 +29,19 @@ def launch_pocketbase():
         AppState.local_db = True
         
         # Optional: Read output and errors from the process
-        
+        time.sleep(5)
+    
         local_user = 'dev@mail.com'
         local_password = '1223334444'
-        local_auth.login_as_admin(local_user,local_password)
-
+        userdata=local_auth.login_as_admin(local_user,local_password)
+        if userdata is None:
+            return False
         print("PocketBase is running...")
 
 
     except Exception as e:
         print(f"Failed to launch PocketBase: {e}")
+       
 
 # Create a thread to launch PocketBase
 def start_pocketbase():
