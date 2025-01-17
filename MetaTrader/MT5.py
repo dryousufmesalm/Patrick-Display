@@ -19,17 +19,16 @@ class MetaTrader:
             print('Initialization failed, check internet connection. You must have Meta Trader 5 installed.')
             Mt5.shutdown()
         else:
-            launched =self.connect()
-        return launched
+            print('You are connected to your MetaTrader account.')
+            self.connect()
+            
             
     def connect(self):
         """ Connect to the MetaTrader 5 account """
         if self.server == ""  or self.password == "" :
-            if  self.username != "":
-                self.authorized= Mt5.login(login=self.username)
+            if   self.username != "":
+                self.authorized= Mt5.login(self.username)
                 store.Mt5_authorized=self.authorized
-                return self.authorized
-                 
             else :
                 print('Please provide your MetaTrader 5 account number and password.')
                 return False
@@ -39,10 +38,8 @@ class MetaTrader:
         if not self.authorized:
             print('Login failed, check your account number and password.')
             Mt5.shutdown()
-            return False
         else:
             print('You are connected to your MetaTrader account.')
-            return True
     
     def     get_account_info(self):
     # The `get_account_info` method in the `MetaTrader` class is a function that retrieves and
@@ -132,7 +129,10 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        return ticket
+        order_data =None
+        while order_data is None:
+            order_data= self.get_position_by_ticket(ticket)
+        return order_data
     def sell(self, symbol, volume,magic, sl,tp,sltp_type,slippage,comment=None):
         """ Sell a symbol """
         symbol_info = Mt5.symbol_info(symbol)
@@ -185,7 +185,10 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        return ticket
+        order_data =None
+        while order_data is None:
+            order_data= self.get_position_by_ticket(ticket)
+        return order_data
     def get_position_by_ticket(self,ticket):
         """ Get a position by its ticket """
         return Mt5.positions_get(ticket=ticket)
@@ -247,8 +250,11 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        return ticket
-    
+        order_data =None
+        while order_data is None:
+            order_data= self.get_order_by_ticket(ticket)
+        return order_data
+        
     # sell stop
     
     def sell_stop(self, symbol, price, volume, magic, sl, tp, sltp_type, slippage, comment=None):
@@ -296,7 +302,11 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        return ticket
+        order_data =None
+        while order_data is None:
+            order_data= self.get_order_by_ticket(ticket)
+        return order_data
+        
         
     # buy limit
     
@@ -345,7 +355,11 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        return ticket
+        order_data =None
+        while order_data is None:
+            order_data= self.get_order_by_ticket(ticket)
+        return order_data
+        
     
     # sell limit
     
@@ -394,7 +408,11 @@ class MetaTrader:
         # request the result as a dictionary and display it element by element
         result_dict=result._asdict()
         ticket=result_dict["order"]
-        return ticket
+        order_data =None
+        while order_data is None:
+            order_data= self.get_order_by_ticket(ticket)
+        return order_data
+        
     
     # close position
     def close_position(self,order, deviation):

@@ -2,7 +2,6 @@ from Strategy.strategy import Strategy
 import  threading
 from Orders.order import order
 from cycles.CT_cycle  import cycle
-import time
 class CycleTrader(Strategy):
     """ CycleTrader strategy """
     def __init__(self, meta_trader, config, client,symbol,bot,local_api):
@@ -194,7 +193,7 @@ class CycleTrader(Strategy):
         float_array = [float(value.strip()) for value in string.split(",")]
         return float_array
 
-    def create_cycle(self,ticket1,ticket2,is_pending,sent_by_admin,user_id,username):
+    def create_cycle(self,order1,order2,is_pending,sent_by_admin,user_id,username):
         """
         This function creates a cycle.
 
@@ -204,13 +203,6 @@ class CycleTrader(Strategy):
         Returns:
         None
         """
-        time.sleep(2)
-        order1=None
-        order2=None
-        if ticket1:
-            order1 = self.meta_trader.get_position_by_ticket(ticket1) if is_pending is False else self.client.get_order_by_id(ticket1)
-        if ticket2:
-            order2 = self.meta_trader.get_position_by_ticket(ticket2) if is_pending is False else self.client.get_order_by_id(ticket2)
         lower_bound = float(order1[0].price_open) - float(self.zones[0]) * float(self.meta_trader.get_pips(self.symbol))
         upper_bound = float(order1[0].price_open) + float(self.zones[0]) * float(self.meta_trader.get_pips(self.symbol))
         upper_threshold = float(upper_bound) +  float(self.autotrade_threshold  * float(self.meta_trader.get_pips(self.symbol)))
