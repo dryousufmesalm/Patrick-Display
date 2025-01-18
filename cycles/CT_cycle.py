@@ -171,9 +171,34 @@ class cycle:
                         self.remove_pending_order(order_ticket)
                     elif order_kind == "threshold":
                         self.remove_threshold_order(order_ticket)
-        if len(self.pending)==0 and len(self.initial)>0 and  self.is_pending  is True:
+                if order_data[0].is_pending is False and order_ticket in self.pending:
+                    self.remove_pending_order(order_ticket)
+                    self.add_initial_order(order_ticket)    
+                    self.is_pending = False
+                    self.status = "initial"
+                    
+        if len(self.pending)==0 and  self.is_pending  is True:
             self.status = "initial"
             self.is_pending = False
+        if len(self.pending)==1 and len(self.initial)==1:
+            # close the pending order anc open it as market order
+            order_data = self.local_api.get_order_by_ticket(self.pending[0])
+            order_obj = order(order_data[0], order_data[0].is_pending, self.mt5, self.local_api,"db")
+            order_obj.close_order()
+            self.pending.remove(self.pending[0])
+            if order_obj.type == 2 or order_obj.type == 4:
+                # open buy order
+                new_order=self.mt5.buy(self.symbol, order_obj.volume, self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "initial")
+                self.add_initial_order(new_order[0].ticket)
+                new_order_obj = order( new_order[0], False, self.mt5, self.local_api,"mt5")
+                new_order_obj.create_order()
+                
+            elif order_obj.type == 3 or order_obj.type == 5:
+                # open sell order
+                new_order=self.mt5.sell(self.symbol, order_obj.volume, self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "initial")
+                self.add_initial_order(new_order[0].ticket)
+                new_order_obj = order( new_order[0], False, self.mt5, self.local_api,"mt5")
+                new_order_obj.create_order()
         if  len(self.orders)==0:
             self.status = "closed"
             self.is_closed = True

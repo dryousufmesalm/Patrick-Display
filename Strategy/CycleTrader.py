@@ -285,7 +285,6 @@ class CycleTrader(Strategy):
         None
         """
         while True:
-            
             active_cycles = self.get_all_active_cycles()
             if self.autotrade is True:
                 self.open_new_cycle(active_cycles)

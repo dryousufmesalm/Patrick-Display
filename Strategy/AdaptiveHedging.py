@@ -252,11 +252,17 @@ class AdaptiveHedging(Strategy):
         if order1:
             order_obj = order( order1[0], is_pending,self.meta_trader,self.local_api,"mt5")
             order_obj.create_order()
-            New_cycle.add_initial_order(order1[0].ticket)
+            if is_pending:
+                New_cycle.add_pending_order(order1[0].ticket)
+            else:
+                New_cycle.add_initial_order(order1[0].ticket)
         if order2:
             order_obj = order( order2[0], is_pending,self.meta_trader,self.local_api,"mt5")
             order_obj.create_order()
-            New_cycle.add_initial_order(order2[0].ticket)
+            if is_pending:
+                New_cycle.add_pending_order(order2[0].ticket)
+            else:
+                New_cycle.add_initial_order(order2[0].ticket)
         res=self.client.create_AH_cycle(New_cycle.to_remote_dict())
         New_cycle.cycle_id =  str( res.id)
         New_cycle.create_cycle()
