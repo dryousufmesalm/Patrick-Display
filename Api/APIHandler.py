@@ -28,7 +28,16 @@ class API:
         except Exception as e:
             logging.error(f"Failed to login: {e}")
             return None
-
+    def Refresh_token(self):
+        """Refresh the token."""
+        try:
+            user_data = self.client.collection("users").authRefresh()
+            self.token = user_data.token
+            self.authenticated = user_data.is_valid
+            return user_data
+        except Exception as e:
+            logging.error(f"Failed to refresh token: {e}")
+            return None
     def logout(self):
         """Log out the current user."""
         try:
