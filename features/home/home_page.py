@@ -1,8 +1,7 @@
 import flet
 from features.globals.app_router import AppRoutes, AppRouter
 from features.globals.app_state import store
-from pb import start_pocketbase
-
+from Api.LocalDB import *
 def build(page: flet.Page):
     page.title = "Home"
     home_page = HomePageView()
@@ -40,12 +39,12 @@ class HomePageView(flet.Column):
             text_align=flet.TextAlign.CENTER,
         )
 
-        self.localdb_button = flet.ElevatedButton(
-            text="Local server is running" if store.local_db else "Launch local server",
-            on_click=self.toggle_localdb,
-            expand=False,
-            width=300,
-        )
+        # self.localdb_button = flet.ElevatedButton(
+        #     text="Local server is running" if store.local_db else "Launch local server",
+        #     on_click=self.toggle_localdb,
+        #     expand=False,
+        #     width=300,
+        # )
 
         self.mt5_button = flet.ElevatedButton(
             text="MT5 connected" if store.Mt5_authorized else "Connect MT5",
@@ -78,7 +77,7 @@ class HomePageView(flet.Column):
 
         self.controls = [
             self.headline,
-            self.localdb_button,
+            # self.localdb_button,
             self.mt5_button,
             self.login_button,
             self.logout_button,
@@ -95,24 +94,24 @@ class HomePageView(flet.Column):
         # self.feedback_history.controls.append(feedback_item)
         # self.feedback_history.update()
 
-    def toggle_localdb(self, e):
-        # self.show_feedback("Processing...", is_error=False)
+    # def toggle_localdb(self, e):
+    #     # self.show_feedback("Processing...", is_error=False)
 
-        if store.get_local_db():
-            store.set_local_db(False)
-            self.localdb_button.text = "Launch local server"
-            # self.show_feedback("LocalDB stopped successfully.")
-        else:
-            self.login_progress.visible = True
-            self.update()
-            start_pocketbase()
-            self.login_progress.visible = False
-            store.set_local_db(True)
-            self.update()
-            self.localdb_button.text = "Local server is running"
-            # self.show_feedback("LocalDB launched successfully.")
+    #     if store.get_local_db():
+    #         store.set_local_db(False)
+    #         self.localdb_button.text = "Launch local server"
+    #         # self.show_feedback("LocalDB stopped successfully.")
+    #     else:
+    #         self.login_progress.visible = True
+    #         self.update()
+    #         start_pocketbase()
+    #         self.login_progress.visible = False
+    #         store.set_local_db(True)
+    #         self.update()
+    #         self.localdb_button.text = "Local server is running"
+    #         # self.show_feedback("LocalDB launched successfully.")
 
-        self.update()
+    #     self.update()
 
     def launch_mt5(self, e):
         # self.show_feedback("MT5 launched", is_error=False)

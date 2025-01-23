@@ -8,7 +8,7 @@ class order:
         self.kind = order_data.kind if source == "db" else order_data.comment
         self.magic_number = order_data.magic if source == "mt5" else order_data.magic_number
         self.open_price = round(order_data.price_open, 2) if source == "mt5" else order_data.open_price
-        self.open_time = datetime.datetime.fromtimestamp(order_data.time_setup if is_pending else order_data.time).strftime('%Y-%m-%d %H:%M:%S') if source == "mt5" else order_data.open_time
+        self.open_time = datetime.datetime.fromtimestamp(order_data.time_setup if is_pending else order_data.time).strftime("%Y-%m-%d %H:%M:%S") if source == "mt5" else order_data.open_time
         self.profit = round(0 if is_pending else order_data.profit, 2)
         self.sl = round(order_data.sl, 2)
         self.swap = round(0 if is_pending else order_data.swap, 2)
@@ -25,6 +25,7 @@ class order:
     def to_dict(self):
         return {
      
+            "ticket": self.ticket,
             "comment": self.comment,
             "commission": self.commission,
             "is_pending": self.is_pending,
@@ -36,7 +37,6 @@ class order:
             "sl": self.sl,
             "swap": self.swap,
             "symbol": self.symbol,
-            "ticket": self.ticket,
             "tp": self.tp,
             "type": self.type,
             "volume": self.volume,

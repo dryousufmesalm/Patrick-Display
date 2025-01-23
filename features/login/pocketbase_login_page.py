@@ -4,7 +4,8 @@ from features.auth import auth
 
 from features.globals.app_logger import app_logger
 from features.globals.app_router import AppRouter, AppRoutes
-from pb import local_auth
+from DB.remote_login.repositories.remote_login_repo import RemoteLoginRepo
+from DB.db_engine import engine
 def build(page: flet.Page):
     page.title = "Login to remote server"
     login_page = LoginPageView()
@@ -93,7 +94,8 @@ class LoginPageView(flet.Column):
         if result[0]:
             # TODO: navigate to the home page
             app_logger.info("Login successful, navigating to home page")
-            local_auth.set_pb_credintials(data)
+            remote_logger= RemoteLoginRepo(engine=engine)
+            credentials = remote_logger.set_pb_credentials(data)
             AppRouter.change_route(AppRoutes.HOME)
             if result[1]:
                 app_logger.info(msg=result[1])
@@ -104,11 +106,12 @@ class LoginPageView(flet.Column):
     def load_saved_credentials(self):
         try:
             # Assuming `local_auth` has a method `get_credentials` returning a dict with keys 'username' and 'password'
-            credentials = local_auth.get_pb_credintials()
-            if len(credentials) == 0:
+            remote_logger= RemoteLoginRepo(engine=engine)
+            credentials = remote_logger.get_pb_credintials()
+            if credentials is None:
                 return None
             
-            return credentials[-1]
+            return credentials
         except Exception as e:
             app_logger.error(f"Failed to load saved credentials: {e}")
             return None

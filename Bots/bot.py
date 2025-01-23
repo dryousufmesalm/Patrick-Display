@@ -4,8 +4,10 @@ import logging
 from Strategy.AdaptiveHedging import AdaptiveHedging
 from Strategy.CycleTrader import CycleTrader
 from Strategy.StockTrader import StockTrader
+
+
 class Bot:
-    def __init__(self, client,account,meta_trader,bot_id,local_api):  
+    def __init__(self, client,account,meta_trader,bot_id):  
         self.id = bot_id
         self.account = None
         self.strategy_name= None
@@ -16,8 +18,8 @@ class Bot:
         self.account = account
         self.meta_trader = meta_trader
         self.strategy = None
-        self.local_api = local_api
         self.setting= None
+        
         
     
     def initialize(self):
@@ -50,10 +52,10 @@ class Bot:
         """ Initialize the strategy """
         try:
             if self.strategy_name == "Tony AH Recovery":
-                self.strategy = AdaptiveHedging(self.meta_trader, self.configs, self.client,self.symbol,self,self.local_api)
+                self.strategy = AdaptiveHedging(self.meta_trader, self.configs, self.client,self.symbol,self)
                 self.strategy.initialize(self.configs,self.settings)
             elif self.strategy_name == "Cycles Trader":
-                self.strategy = CycleTrader(self.meta_trader, self.configs, self.client,self.symbol,self,self.local_api)
+                self.strategy = CycleTrader(self.meta_trader, self.configs, self.client,self.symbol,self)
                 self.strategy.initialize(self.configs,self.settings)
             elif self.strategy_name == "Stock rader":
                 self.strategy = StockTrader(self.meta_trader, self.configs, self.client)

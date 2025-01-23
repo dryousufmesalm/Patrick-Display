@@ -1,41 +1,64 @@
 import datetime
 from Orders.order import order
 import MetaTrader5 as Mt5
+from DB.db_engine import engine
+from DB.ct_strategy.repositories.ct_repo import CTRepo
+from types import SimpleNamespace
+
 class cycle:
-    def __init__(self, data,local_api,mt5,bot,source=None):
-        self.bot_id = data.bot if source == "db" else data["bot"]
-        self.initial = data.initial if source == "db" else data["initial"]
-        self.hedge = data.hedge if source == "db" else  data["hedge"]
-        self.recovery =     data.recovery   if source == "db" else data['recovery']
-        self.pending =  data.pending    if source == "db" else data['pending']
-        self.closed =   data.closed if source == "db" else data['closed']
-        self.threshold = data.threshold if source == "db" else data['threshold']
-        self.is_closed =    data.is_closed  if source == "db" else data['is_closed']
-        self.lower_bound =  data.lower_bound    if source == "db" else data['lower_bound']  
-        self.upper_bound =  data.upper_bound        if source == "db" else data['upper_bound']
-        self.lot_idx =  data.lot_idx    if source == "db" else data['lot_idx']
-        self.zone_index =   data.zone_index if source == "db" else data['zone_index']
-        self.status =   data.status     if source == "db" else data['status']
-        self.symbol =   data.symbol    if source == "db" else data['symbol']
-        self.total_profit =     data.total_profit       if source == "db" else data['total_profit']        
-        self.total_volume =     data.total_volume    if source == "db" else data['total_volume']
-        self.closing_method =   data.closing_method   if source == "db" else data['closing_method']
-        self.opened_by =    data.opened_by  if source == "db" else data['opened_by']
-        self.account =  data.account    if source == "db" else data['account']
+    def __init__(self, data,mt5,bot,source=None):
+        self.bot_id = data.bot if source in ("db", "remote")  else data["bot"]
+        self.initial = data.initial if source == "db" else [] if source == "remote" else data["initial"]
+        self.hedge = data.hedge if source == "db" else  [] if source == "remote" else data["hedge"]
+        self.recovery =     data.recovery   if source == "db"   else [] if source == "remote" else data["recovery"]
+        self.pending =  data.pending    if source == "db"   else [] if source == "remote" else data["pending"]
+        self.closed =   data.closed if source == "db"   else [] if source == "remote" else data["closed"]
+        self.threshold = data.threshold if source == "db"   else [] if source == "remote" else data["threshold"]
+        self.is_closed =    data.is_closed  if source in ("db", "remote")  else data['is_closed']
+        self.lower_bound =  data.lower_bound    if source in ("db", "remote") else data['lower_bound']  
+        self.upper_bound =  data.upper_bound        if source in ("db", "remote") else data['upper_bound']
+        self.lot_idx =  data.lot_idx    if source in ("db", "remote")  else data['lot_idx']
+        self.zone_index =   data.zone_index if source == "db" else 0 if source =="remote" else data['zone_index']
+        self.status =   data.status     if source in ("db", "remote") else data['status']
+        self.symbol =   data.symbol    if source in ("db", "remote") else data['symbol']
+        self.total_profit =     data.total_profit       if source in ("db", "remote") else data['total_profit']        
+        self.total_volume =     data.total_volume    if source in ("db", "remote") else data['total_volume']
+        self.closing_method =   data.closing_method   if source in ("db", "remote") else data['closing_method']
+        self.opened_by =    data.opened_by  if source in ("db", "remote") else data['opened_by']
+        self.account =  data.account    if source in ("db", "remote") else data['account']
         self.id =   data.id   if source == "db" else ""
-        self.cycle_id = data.cycle_id   if source == "db" else ""
-        self.is_pending =   data.is_pending if source == "db" else data['is_pending']
-        self.local_api = local_api
+        self.cycle_id = data.remote_id   if source == "db" else data.id if source == "remote" else ""
+        self.is_pending =   data.is_pending if source == "db" else False if source == "remote" else data['is_pending']
+        self.local_api = CTRepo(engine= engine)
         self.mt5 = mt5
         self.bot=bot
-        self.threshold_upper=data.threshold_upper if source == "db" else data['threshold_upper']
-        self.threshold_lower=data.threshold_lower if source == "db" else data['threshold_lower']
-        self.orders=self.combine_orders()
+        self.threshold_upper=data.threshold_upper if source == "db" else 0 if source == "remote" else data['threshold_upper']
+        self.threshold_lower=data.threshold_lower if source == "db" else    0 if source == "remote" else data['threshold_lower']
+        self.orders= self.get_orders_from_remote(data.orders['orders']) if source == 'remote' else self.combine_orders() 
+
         
      
     def combine_orders(self):
         return self.initial + self.hedge + self.pending +  self.recovery+ self.threshold
-
+    def get_orders_from_remote(self,orders):
+        for order_data in orders:
+            # convet orderdata to subscrible 
+            
+            order_obj = order(SimpleNamespace(order_data),self.is_pending,self.mt5,self.local_api,"db")
+            order_obj.create_order()
+            # add the order to the orders list
+            order_kind= order_obj.kind
+            order_ticket = order_obj.ticket
+            if order_kind == "initial":
+                self.remove_initial_order(order_ticket)
+            elif order_kind == "hedge":
+                self.remove_hedge_order(order_ticket)
+            elif order_kind == "recovery":
+                self.remove_recovery_order(order_ticket)
+            elif order_kind == "pending":
+                self.remove_pending_order(order_ticket)
+            elif order_kind == "threshold":
+                self.remove_threshold_order(order_ticket)
     # create cycle data
     def to_dict(self):
         data = {
@@ -60,7 +83,7 @@ class cycle:
             "recovery": self.recovery,
             "threshold": self.threshold,
             "opened_by": self.opened_by,
-            "cycle_id": self.cycle_id,
+            "remote_id": self.cycle_id,
             "threshold_upper": self.threshold_upper,
             "threshold_lower": self.threshold_lower,
             
@@ -93,12 +116,12 @@ class cycle:
         #  go through the orders and add them to the data
         for order_ticket in self.orders:
             order_data = self.local_api.get_order_by_ticket(order_ticket)
-            order_obj = order(order_data[0], order_data[0].is_pending, self.mt5, self.local_api,"db")
+            order_obj = order(order_data, order_data.is_pending, self.mt5, self.local_api,"db")
             data["orders"]["orders"].append(order_obj.to_dict())
             
         for order_ticket in self.closed:
             order_data = self.local_api.get_order_by_ticket(order_ticket)
-            order_obj = order(order_data[0], order_data[0].is_pending, self.mt5, self.local_api,"db")
+            order_obj = order(order_data, order_data.is_pending, self.mt5, self.local_api,"db")
             data["orders"]["orders"].append(order_obj.to_dict())
         return data
     #add  initial order
@@ -153,14 +176,14 @@ class cycle:
         self.total_volume = 0
         for order_ticket in self.orders:
             order_data = self.local_api.get_order_by_ticket(order_ticket)
-            if len(order_data)>0:
-                self.total_profit += order_data[0].profit+order_data[0].swap+order_data[0].commission
-                self.total_volume += order_data[0].volume
+            if order_data:
+                self.total_profit += order_data.profit+order_data.swap+order_data.commission
+                self.total_volume += order_data.volume
                 # check if order is already closed
-                if order_data[0].is_closed:
+                if order_data.is_closed:
                     if  order_ticket not in self.closed:
                         self.closed.append(order_ticket)
-                    order_kind= order_data[0].kind
+                    order_kind= order_data.kind
                     if order_kind == "initial":
                         self.remove_initial_order(order_ticket)
                     elif order_kind == "hedge":
@@ -171,7 +194,7 @@ class cycle:
                         self.remove_pending_order(order_ticket)
                     elif order_kind == "threshold":
                         self.remove_threshold_order(order_ticket)
-                if order_data[0].is_pending is False and order_ticket in self.pending:
+                if order_data.is_pending is False and order_ticket in self.pending:
                     self.remove_pending_order(order_ticket)
                     self.add_initial_order(order_ticket)    
                     self.is_pending = False
@@ -183,7 +206,7 @@ class cycle:
         if len(self.pending)==1 and len(self.initial)==1:
             # close the pending order anc open it as market order
             order_data = self.local_api.get_order_by_ticket(self.pending[0])
-            order_obj = order(order_data[0], order_data[0].is_pending, self.mt5, self.local_api,"db")
+            order_obj = order(order_data, order_data.is_pending, self.mt5, self.local_api,"db")
             order_obj.close_order()
             self.pending.remove(self.pending[0])
             if order_obj.type == 2 or order_obj.type == 4:
@@ -206,10 +229,10 @@ class cycle:
             self.closing_method["status"] = "MetaTrader5"
             self.closing_method["username"] = "MetaTrader5"
             remote_api.update_CT_cycle_by_id(self.cycle_id, self.to_remote_dict())
-        self.local_api.update_CT_cycle_by_id(self.id, self.to_dict())
+        self.local_api.Update_cycle(self.id, self.to_dict())
     # create a new cycle
     def create_cycle(self):
-        cycle_data = self.local_api.create_CT_cycle(self.to_dict())
+        cycle_data = self.local_api.create_cycle(self.to_dict())
         return cycle_data
     # close cycle
     def close_cycle(self, sent_by_admin, user_id, username):
@@ -219,7 +242,7 @@ class cycle:
         for order_id in self.orders:
             order_data = self.local_api.get_order_by_ticket(order_id)
             if order_data:
-                orderobj = order( order_data[0],self.is_pending,self.mt5, self.local_api)
+                orderobj = order( order_data,self.is_pending,self.mt5, self.local_api)
                 orderobj.close_order()
                 
         self.is_closed = True
@@ -232,7 +255,7 @@ class cycle:
             self.closing_method["user_id"] = user_id
             self.closing_method["status"] = "closed by User"
         self.closing_method["username"] = username
-        self.local_api.update_CT_cycle_by_id(self.id, self.to_dict())
+        self.local_api.Update_cycle(self.id, self.to_dict())
         
         return True
 
@@ -274,7 +297,7 @@ class cycle:
             for i in range(total_initial):
                 ticket = self.initial[i]
                 order_data_db=  self.local_api.get_order_by_ticket(ticket)
-                orderobj= order(order_data_db[0],self.is_pending,self.mt5,self.local_api)
+                orderobj= order(order_data_db,self.is_pending,self.mt5,self.local_api)
                 if orderobj.type == Mt5.ORDER_TYPE_BUY:
                     orderobj.close_order()
                     self.initial.pop(i)
@@ -287,7 +310,7 @@ class cycle:
             for i in range(total_sells):
                 ticket = self.initial[i]
                 order_data_db=  self.local_api.get_order_by_ticket(ticket)
-                orderobj= order( order_data_db[0],self.is_pending,self.mt5,self.local_api)
+                orderobj= order( order_data_db,self.is_pending,self.mt5,self.local_api)
                 if orderobj.type == Mt5.ORDER_TYPE_SELL:
                     orderobj.close_order()
                     self.initial.pop(i)
@@ -298,7 +321,7 @@ class cycle:
         total_sell = 0
         for ticket in self.initial:
             order_data_db = self.local_api.get_order_by_ticket(ticket)
-            orderobj = order( order_data_db[0], self.is_pending, self.mt5,self.local_api)
+            orderobj = order( order_data_db, self.is_pending, self.mt5,self.local_api)
             if orderobj.type == Mt5.ORDER_TYPE_SELL:
                 total_sell += 1
         return total_sell
@@ -307,7 +330,7 @@ class cycle:
         total_buy = 0
         for ticket in self.initial:
             order_data_db = self.local_api.get_order_by_ticket(ticket)
-            orderobj = order( order_data_db[0], self.is_pending, self.mt5,self.local_api)
+            orderobj = order( order_data_db, self.is_pending, self.mt5,self.local_api)
             if orderobj.type == Mt5.ORDER_TYPE_BUY:
                 total_buy += 1
         return total_buy
@@ -393,7 +416,7 @@ class cycle:
     def close_recovery_orders(self):
         for ticket in self.recovery:
             order_data_db=  self.local_api.get_order_by_ticket(ticket)
-            orderobj= order(  order_data_db[0],self.is_pending,self.mt5,self.local_api,"db")
+            orderobj= order(  order_data_db,self.is_pending,self.mt5,self.local_api,"db")
             orderobj.close_order()
             orderobj.is_closed = True
             orderobj.update_order()
@@ -406,7 +429,7 @@ class cycle:
             if ask > self.upper_bound:
                 last_hedge= self.hedge[-1]
                 order_data_db=  self.local_api.get_order_by_ticket(last_hedge)
-                orderobj= order(  order_data_db[0],self.is_pending,self.mt5,self.local_api,"db")
+                orderobj= order(  order_data_db,self.is_pending,self.mt5,self.local_api,"db")
                 last_hedge_type = orderobj.type
                 last_hedge_profit = orderobj.profit
                 if  last_hedge_type==Mt5.ORDER_TYPE_SELL and last_hedge_profit < 0:
@@ -415,7 +438,7 @@ class cycle:
             elif bid < self.lower_bound:
                 last_hedge= self.hedge[-1]
                 order_data_db=  self.local_api.get_order_by_ticket(last_hedge)
-                orderobj= order(  order_data_db[0],self.is_pending,self.mt5,self.local_api,"db")
+                orderobj= order(  order_data_db,self.is_pending,self.mt5,self.local_api,"db")
                 last_hedge_type = orderobj.type
                 last_hedge_profit = orderobj.profit
                 if  last_hedge_type==Mt5.ORDER_TYPE_BUY and last_hedge_profit < 0:
@@ -423,7 +446,7 @@ class cycle:
                     self.hedge_buy_order()
                     
     def update_CT_cycle(self):
-        self.local_api.update_CT_cycle_by_id(self.id, self.to_dict())
+        self.local_api.Update_cycle(self.id, self.to_dict())
     #  close   cycle when hits  takeprofit
     def close_cycle_on_takeprofit(self,take_profit,remote_api):
         if self.total_profit >= take_profit:

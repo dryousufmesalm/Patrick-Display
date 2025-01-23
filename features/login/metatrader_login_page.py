@@ -1,10 +1,11 @@
 import flet
 import asyncio
 from features.auth import auth
-from pb import local_auth
+from Api.LocalDB import local_auth
 from features.globals.app_logger import app_logger
 from features.globals.app_router import AppRouter, AppRoutes
-
+from DB.mt5_login.repositories.mt5_login_repo  import MT5LoginRepo
+from DB.db_engine import engine
 
 def build(page: flet.Page):
     page.title = "Login to MT5"
@@ -114,7 +115,7 @@ class LoginPageView(flet.Column):
             "password": self.password.value,
             "server": self.server.value,
             "program_path": self.program_path_text.value,
-            "type" : "mt5",
+   
         }
         result = await auth.launch_metatrader(**data)
         
@@ -124,18 +125,21 @@ class LoginPageView(flet.Column):
             # TODO: navigate to the home page
             app_logger.info("Login successful, navigating to home page")
             AppRouter.change_route(AppRoutes.HOME)
-            local_auth.set_mt5_credintials(data)
+            mt5_logger=MT5LoginRepo(engine=engine)
+            mt5_logger.set_mt5_credentials(data)
             
         else:
             app_logger.error(msg=f"Login failed")
     def load_saved_credentials(self):
         try:
+            mt5_logger=MT5LoginRepo(engine=engine)
+            
             # Assuming `local_auth` has a method `get_credentials` returning a dict with keys 'username' and 'password'
-            credentials = local_auth.get_mt5_credintials()
-            if len(credentials) == 0:
+            credentials = mt5_logger.get_mt5_credentials()
+            if credentials is None:
                 return None
             
-            return credentials[-1]
+            return credentials
         except Exception as e:
             app_logger.error(f"Failed to load saved credentials: {e}")
             return None

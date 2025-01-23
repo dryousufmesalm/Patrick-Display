@@ -2,14 +2,11 @@ import subprocess
 import os
 import threading
 from features.globals.app_state import AppState
-from Api.LocalD_oldB import API as LocalAPI
 import time
 local_url = "http://127.0.0.1:8090"
 
 
 # Define the path to the PocketBase binary
-POCKETBASE_PATH = r"pocketbase\pocketbase.exe"  # Adjust this path to the location of your PocketBase binary
-local_auth = LocalAPI(local_url)
 
 # Define the data directory (optional)
 DATA_DIR = "./pocketbase/pb_data"

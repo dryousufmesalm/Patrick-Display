@@ -2,9 +2,11 @@ from Strategy.strategy import Strategy
 import  threading
 from Orders.order import order
 from cycles.CT_cycle  import cycle
+from DB.db_engine import engine
+from DB.ct_strategy.repositories.ct_repo import CTRepo
 class CycleTrader(Strategy):
     """ CycleTrader strategy """
-    def __init__(self, meta_trader, config, client,symbol,bot,local_api):
+    def __init__(self, meta_trader, config, client,symbol,bot):
         self.meta_trader = meta_trader
         self.config = config
         self.client = client
@@ -25,7 +27,7 @@ class CycleTrader(Strategy):
         self.autotrade=False
         self.autotrade_threshold=0
         self.max_cycles=1
-        self.local_api=local_api
+        self.local_api=CTRepo(engine=engine)
         self.settings=None
         self.last_cycle_price=None
         self.init_settings()
@@ -125,7 +127,7 @@ class CycleTrader(Strategy):
                         if(price>ask):
                             #buy stop
                             order1= self.meta_trader.buy_stop(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"initial")
-                            order2= self.meta_trader.sell_limit(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"initial")
+                            order2= self.meta_trader.sell_limit(self.symbol,price,self.lot_sizes[0],self.bot.magic,0, 0,"PIPS",self.slippage,"initial")
                             self.create_cycle(order1,order2,True,sent_by_admin,user_id,username)
                         elif price<bid:
                             order1= self.meta_trader.buy_limit(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"initial")        
@@ -137,8 +139,8 @@ class CycleTrader(Strategy):
             sent_by_admin=content["sent_by_admin"]
             user_id=content["user_id"]
             cycle_id = content['id']
-            cycle_data= self.local_api.get_CT_cycle_by_cycle_id(cycle_id)
-            seleced_cycle= cycle(cycle_data[0],self.local_api,self.meta_trader,self.meta_trader,"db")
+            cycle_data= self.local_api.get_cycle_by_remote_id(cycle_id)
+            seleced_cycle= cycle(cycle_data,self.meta_trader,self.meta_trader,"db")
             seleced_cycle.close_cycle(sent_by_admin,user_id,username)
             self.client.update_CT_cycle_by_id(seleced_cycle.cycle_id,seleced_cycle.to_remote_dict())
         elif message=="update_order_configs":
@@ -147,18 +149,18 @@ class CycleTrader(Strategy):
             tp=content['updated']['tp']
             ts=content['updated']['trailing_steps']
             order_data=self.local_api.get_order_by_ticket(order_ticket)
-            order_obj = order(order_data[0],order_data[0].is_pending,self.meta_trader,self.local_api,"db")
+            order_obj = order(order_data,order_data.is_pending,self.meta_trader,self.local_api,"db")
             order_obj.update_order_configs(sl,tp,ts)
             order_obj.update_order()
         elif message=="close_order":
             order_ticket=content["ticket"]
             order_data=self.local_api.get_order_by_ticket(order_ticket)
-            order_obj = order(order_data[0],order_data[0].is_pending,self.meta_trader,self.local_api,"db")
+            order_obj = order(order_data,order_data.is_pending,self.meta_trader,self.local_api,"db")
             order_obj.close_order()
         elif message=="close_all_cycles":
             active_cycles = self.get_all_active_cycles()
             for cycle_data in active_cycles:
-                cycle_obj = cycle(cycle_data, self.local_api, self.meta_trader, self,"db")
+                cycle_obj = cycle(cycle_data, self.meta_trader, self,"db")
                 cycle_obj.close_cycle(content["sent_by_admin"],content["user_id"],content["user_name"])
                 self.client.update_CT_cycle_by_id(cycle_obj.cycle_id,cycle_obj.to_remote_dict())
         elif message=="stop_bot":
@@ -175,7 +177,7 @@ class CycleTrader(Strategy):
         elif message=="close_pending_order":
             order_ticket=content["ticket"]
             order_data=self.local_api.get_order_by_ticket(order_ticket)
-            order_obj = order(order_data[0],order_data[0].is_pending,self.meta_trader,self.local_api,"db")
+            order_obj = order(order_data,order_data.is_pending,self.meta_trader,self.local_api,"db")
             order_obj.close_order()
             
     def string_to_array(self, string):
@@ -263,8 +265,8 @@ class CycleTrader(Strategy):
        
     # get all active  cycles
     def get_all_active_cycles(self):
-        cycles = self.local_api.get_CT_active_cycles()
-        active_cycles = [cycle for cycle in cycles if cycles[0].is_closed is False]
+        cycles = self.local_api.get_active_cycles()
+        active_cycles = [cycle for cycle in cycles if cycle.is_closed is False]
         return active_cycles
     # open new cycle automatically every threshold pips from the last cycle with limit max cycles 
     def open_new_cycle(self,active_cycles):
@@ -295,7 +297,7 @@ class CycleTrader(Strategy):
             if self.autotrade is True:
                 self.open_new_cycle(active_cycles)
             for cycle_data in active_cycles:
-                cycle_obj = cycle(cycle_data, self.local_api, self.meta_trader, self,"db")
+                cycle_obj = cycle(cycle_data, self.meta_trader, self,"db")
                 if self.stop is False:
                     cycle_obj.manage_cycle_orders(self.autotrade_threshold)
                 cycle_obj.update_cycle(self.client)

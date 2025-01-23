@@ -209,7 +209,13 @@ class API:
         except Exception as e:
             logging.error(f"An error occurred while fetching AH cycles: {e}")
             return []
-
+    def get_all_AH_active_cycles_by_account(self, account_id):
+        """Get all active cycles by account."""
+        try:
+            return self.client.collection("adaptive_hedge_cycles").get_full_list(200, {"filter": f"account = '{account_id}' && is_closed = False"})
+        except Exception as e:
+            logging.error(f"An error occurred while fetching AH cycles by account: {e}")
+            return []
     def update_AH_cycle_by_id(self, cycle_id, data):
         """Update a cycle by its ID."""
         try:
@@ -258,7 +264,13 @@ class API:
         except Exception as e:
             logging.error(f"An error occurred while fetching CT cycles: {e}")
             return []
-
+    def get_all_CT_active_cycles_by_account(self, account_id):
+        """Get all active cycles by account."""
+        try:
+            return self.client.collection("cycles_trader_cycles").get_full_list(200, {"filter": f"account = '{account_id}' && is_closed = False"})
+        except Exception as e:
+            logging.error(f"An error occurred while fetching CT cycles by account: {e}")
+            return []
     def update_CT_cycle_by_id(self, cycle_id, data):
         """Update a cycle by its ID."""
         try:

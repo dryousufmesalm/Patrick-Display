@@ -10,7 +10,8 @@ from Bots.account import Account
 
 from Orders.orders_manager import orders_manager 
 from cycles.cycles_manager import cycles_manager
-from pb import local_auth
+
+
 # Create an MetaTrader of the MetaTraderExpert class
 expert = MetaTrader( 135651648, "uPBGz2Mfvv5PnR!", "Exness-MT5Trial")
 # Check if the connection was successful
@@ -41,11 +42,11 @@ async def login(
         # ******* Do other stuff Here ********
         auth = API(app_configs.pb_url)
         user_data = auth.login(username, password)
-        user_account= Account(auth,expert,local_auth)
+        user_account= Account(auth,expert)
         user_account.on_init()
         user_account.run_in_thread()
-        OrdersManager= orders_manager(local_auth,expert)
-        cyclesManager = cycles_manager(local_auth,expert,auth)
+        OrdersManager= orders_manager(expert)
+        cyclesManager = cycles_manager(expert,auth,user_account)
         OrdersManager.run_in_thread()
         cyclesManager.run_in_thread()
         set_app_token(user_data.token)
@@ -61,7 +62,7 @@ async def login(
   
 
 # launch the metatrader
-async def launch_metatrader(username: str, password: str, server: str, program_path: str , type: str
+async def launch_metatrader(username: str, password: str, server: str, program_path: str 
 ) -> tuple[bool, str]:
     """launch_metatrader function, to launch the metatrader
 

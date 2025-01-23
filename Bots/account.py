@@ -1,9 +1,12 @@
 import threading
 import time
 from Bots.bot import Bot
+from DB.db_engine import engine
+from DB.ah_strategy.repositories.ah_repo import AHRepo
+from DB.ct_strategy.repositories.ct_repo import CTRepo
 class Account:
     """ The account class """
-    def __init__(self,client,meta_trader,local_api):
+    def __init__(self,client,meta_trader):
         """_summary_
 
         Args:
@@ -26,7 +29,8 @@ class Account:
         self.mt5_accounts_info=None
         self.bots=[]
         self.stop=False
-        self.local_api = local_api
+        self.ah_repo= AHRepo(engine=engine)
+        self.ct_repo= CTRepo(engine=engine)
     
     def on_init(self):
         """ Initialize the account """
@@ -107,8 +111,6 @@ class Account:
         try:
             self.client.refresh_token()
             print(f"Token refreshed for account {self.name}!")
-            self.local_api.refresh_token()
-            print(f"Token refreshed for account {self.name}!")
         except (ConnectionError, TimeoutError) as e:
             print(f"Failed to refresh token due to connection issue: {e}")
         except KeyError as e:
@@ -123,7 +125,7 @@ class Account:
         try:
             bots = self.client.get_account_bots(self.id)
             for bot in bots:
-                bot = Bot(self.client, self, self.meta_trader, bot.id,self.local_api)
+                bot = Bot(self.client, self, self.meta_trader, bot.id)
                 bot.initialize()
                 bot.run()  # Run the bot in a background thread
                 self.bots.append(bot)
@@ -157,7 +159,7 @@ class Account:
         content=event.content
         message = content["message"]
         if message=="create_bot":
-            bot = Bot(self.client, self, self.meta_trader, content["id"],self.local_api)
+            bot = Bot(self.client, self, self.meta_trader, content["id"])
             if bot.initialize():
             # run the bot in the background thread
                 bot.run()

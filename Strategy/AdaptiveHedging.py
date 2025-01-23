@@ -2,8 +2,10 @@ from Strategy.strategy import Strategy
 from Orders.order import order
 from cycles.AH_cycle import cycle
 import threading
+from DB.db_engine import engine
+from DB.ah_strategy.repositories.ah_repo import AHRepo
 class AdaptiveHedging(Strategy):
-    def __init__(self, meta_trader, config, client,symbol,bot,local_api):
+    def __init__(self, meta_trader, config, client,symbol,bot):
         self.meta_trader = meta_trader
         self.config = config
         self.client = client
@@ -24,7 +26,7 @@ class AdaptiveHedging(Strategy):
         self.zones = 500
         self.zone_forward = 1
         self.stop=False
-        self.local_api=local_api
+        self.local_api=AHRepo(engine=engine)
         self.settings=None
         self.init_settings()
  
@@ -137,8 +139,8 @@ class AdaptiveHedging(Strategy):
             sent_by_admin=content["sent_by_admin"]
             user_id=content["user_id"]
             cycle_id = content['id']
-            cycle_data= self.local_api.get_AH_cycle_by_cycle_id(cycle_id)
-            seleced_cycle= cycle(cycle_data[0],self.local_api,self.meta_trader,self.meta_trader,"db")
+            cycle_data= self.local_api.get_cycle_by_remote_id(cycle_id)
+            seleced_cycle= cycle(cycle_data,self.meta_trader,self.meta_trader,"db")
             seleced_cycle.close_cycle(sent_by_admin,user_id,username)
             self.client.update_AH_cycle_by_id(seleced_cycle.cycle_id,seleced_cycle.to_remote_dict())
         elif message=="update_order_configs":
@@ -147,18 +149,18 @@ class AdaptiveHedging(Strategy):
             tp=content['updated']['tp']
             ts=content['updated']['trailing_steps']
             order_data=self.local_api.get_order_by_ticket(order_ticket)
-            order_obj = order(order_data[0],order_data[0].is_pending,self.meta_trader,self.local_api,"db")
+            order_obj = order(order_data,order_data.is_pending,self.meta_trader,self.local_api,"db")
             order_obj.update_order_configs(sl,tp,ts)
             order_obj.update_order()
         elif message=="close_order":
             order_ticket=content["ticket"]
             order_data=self.local_api.get_order_by_ticket(order_ticket)
-            order_obj = order(order_data[0],order_data[0].is_pending,self.meta_trader,self.local_api,"db")
+            order_obj = order(order_data,order_data.is_pending,self.meta_trader,self.local_api,"db")
             order_obj.close_order()
         elif message=="close_all_cycles":
             active_cycles = self.get_all_active_cycles()
             for cycle_data in active_cycles:
-                cycle_obj = cycle(cycle_data, self.local_api, self.meta_trader, self,"db")
+                cycle_obj = cycle(cycle_data, self.meta_trader, self,"db")
                 cycle_obj.close_cycle(content["sent_by_admin"],content["user_id"],content["user_name"])
                 self.client.update_AH_cycle_by_id(cycle_obj.cycle_id,cycle_obj.to_remote_dict())
         elif message=="stop_bot":
@@ -175,7 +177,7 @@ class AdaptiveHedging(Strategy):
         elif message=="close_pending_order":
             order_ticket=content["ticket"]
             order_data=self.local_api.get_order_by_ticket(order_ticket)
-            order_obj = order(order_data[0],order_data[0].is_pending,self.meta_trader,self.local_api,"db")
+            order_obj = order(order_data,order_data.is_pending,self.meta_trader,self.local_api,"db")
             order_obj.close_order()
     def initialize(self,config,settings):
         """
@@ -269,10 +271,10 @@ class AdaptiveHedging(Strategy):
        
     # get all active  cycles
     def get_all_active_cycles(self):
-        cycles = self.local_api.get_AH_active_cycles()
+        cycles = self.local_api.get_active_cycles()
         if cycles is None:
             return []
-        active_cycles = [cycle for cycle in cycles if cycles[0].is_closed is False]
+        active_cycles = [cycle for cycle in cycles if cycle.is_closed is False]
         return active_cycles
     # Cycles  Manager 
     
@@ -291,7 +293,7 @@ class AdaptiveHedging(Strategy):
             
             active_cycles = self.get_all_active_cycles()
             for cycle_data in active_cycles:
-                cycle_obj = cycle(cycle_data, self.local_api, self.meta_trader, self,"db")
+                cycle_obj = cycle(cycle_data, self.meta_trader, self,"db")
                 if self.stop is False:
                     cycle_obj.manage_cycle_orders()
                 cycle_obj.update_cycle(self.client)

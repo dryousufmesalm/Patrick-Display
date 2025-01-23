@@ -148,3 +148,6 @@ pb_data/
 
 .history/
 __MACOSX/
+
+# database
+database.db
