@@ -1,7 +1,6 @@
 import flet
 from features.globals.app_router import AppRoutes, AppRouter
 from features.globals.app_state import store
-from Api.LocalDB import *
 def build(page: flet.Page):
     page.title = "Home"
     home_page = HomePageView()

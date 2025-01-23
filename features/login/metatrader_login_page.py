@@ -1,7 +1,6 @@
 import flet
 import asyncio
 from features.auth import auth
-from Api.LocalDB import local_auth
 from features.globals.app_logger import app_logger
 from features.globals.app_router import AppRouter, AppRoutes
 from DB.mt5_login.repositories.mt5_login_repo  import MT5LoginRepo
