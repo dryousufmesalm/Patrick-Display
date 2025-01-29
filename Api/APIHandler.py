@@ -2,8 +2,10 @@ from pocketbase import PocketBase
 import threading
 import logging
 
+
 class API:
     """ The base class for all the API handlers"""
+
     def __init__(self, base_url, token=None):
         self.base_url = base_url
         self.token = token
@@ -17,7 +19,8 @@ class API:
     def login(self, username, password):
         """Authenticate with the API using the provided username and password."""
         try:
-            user_data = self.client.collection("users").auth_with_password(username, password)
+            user_data = self.client.collection(
+                "users").auth_with_password(username, password)
             self.token = user_data.token
             self.user_id = user_data.record.id
             self.authenticated = user_data.is_valid
@@ -28,6 +31,7 @@ class API:
         except Exception as e:
             logging.error(f"Failed to login: {e}")
             return None
+
     def Refresh_token(self):
         """Refresh the token."""
         try:
@@ -38,6 +42,7 @@ class API:
         except Exception as e:
             logging.error(f"Failed to refresh token: {e}")
             return None
+
     def logout(self):
         """Log out the current user."""
         try:
@@ -52,11 +57,11 @@ class API:
             logging.error(f"Failed to logout: {e}")
             return False
 
-    def get_accounts(self):
+    def get_accounts(self, userid):
         """Get all accounts for the current user."""
         try:
             accounts = self.client.collection("accounts").get_full_list(200, {
-                "filter": f"user = '{self.user_id}'"
+                "filter": f"user = '{userid}'"
             })
             return accounts
         except Exception as e:
@@ -209,13 +214,16 @@ class API:
         except Exception as e:
             logging.error(f"An error occurred while fetching AH cycles: {e}")
             return []
+
     def get_all_AH_active_cycles_by_account(self, account_id):
         """Get all active cycles by account."""
         try:
             return self.client.collection("adaptive_hedge_cycles").get_full_list(200, {"filter": f"account = '{account_id}' && is_closed = False"})
         except Exception as e:
-            logging.error(f"An error occurred while fetching AH cycles by account: {e}")
+            logging.error(
+                f"An error occurred while fetching AH cycles by account: {e}")
             return []
+
     def update_AH_cycle_by_id(self, cycle_id, data):
         """Update a cycle by its ID."""
         try:
@@ -264,13 +272,16 @@ class API:
         except Exception as e:
             logging.error(f"An error occurred while fetching CT cycles: {e}")
             return []
+
     def get_all_CT_active_cycles_by_account(self, account_id):
         """Get all active cycles by account."""
         try:
             return self.client.collection("cycles_trader_cycles").get_full_list(200, {"filter": f"account = '{account_id}' && is_closed = False"})
         except Exception as e:
-            logging.error(f"An error occurred while fetching CT cycles by account: {e}")
+            logging.error(
+                f"An error occurred while fetching CT cycles by account: {e}")
             return []
+
     def update_CT_cycle_by_id(self, cycle_id, data):
         """Update a cycle by its ID."""
         try:

@@ -188,20 +188,21 @@ class cycle:
             order_data = self.local_api.get_order_by_ticket(self.pending[0])
             order_obj = order(order_data, order_data.is_pending, self.mt5, self.local_api,"db")
             order_obj.close_order()
-            self.pending.remove(self.pending[0])
-            if order_obj.type == 2 or order_obj.type == 4:
-                # open buy order
-                new_order=self.mt5.buy(self.symbol, order_obj.volume, self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "initial")
-                self.add_initial_order(new_order[0].ticket)
-                new_order_obj = order( new_order[0], False, self.mt5, self.local_api,"mt5")
-                new_order_obj.create_order()
-                
-            elif order_obj.type == 3 or order_obj.type == 5:
-                # open sell order
-                new_order=self.mt5.sell(self.symbol, order_obj.volume, self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "initial")
-                self.add_initial_order(new_order[0].ticket)
-                new_order_obj = order( new_order[0], False, self.mt5, self.local_api,"mt5")
-                new_order_obj.create_order()
+            if order_obj.is_closed ==True:
+                self.pending.remove(self.pending[0])
+                if order_obj.type == 2 or order_obj.type == 4:
+                    # open buy order
+                    new_order=self.mt5.buy(self.symbol, order_obj.volume, self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "initial")
+                    self.add_initial_order(new_order[0].ticket)
+                    new_order_obj = order( new_order[0], False, self.mt5, self.local_api,"mt5")
+                    new_order_obj.create_order()
+                    
+                elif order_obj.type == 3 or order_obj.type == 5:
+                    # open sell order
+                    new_order=self.mt5.sell(self.symbol, order_obj.volume, self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "initial")
+                    self.add_initial_order(new_order[0].ticket)
+                    new_order_obj = order( new_order[0], False, self.mt5, self.local_api,"mt5")
+                    new_order_obj.create_order()
         if  len(self.orders)==0:
             self.status = "closed"
             self.is_closed = True
