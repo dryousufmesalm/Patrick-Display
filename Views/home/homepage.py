@@ -6,6 +6,7 @@ from fletx import Xview
 
 class HomePageView(Xview):
     def build(self):
+
         headline = flet.Text(
             value="Patrick Display",
             style=flet.TextStyle(
@@ -35,7 +36,7 @@ class HomePageView(Xview):
                         f'/accounts/{user["id"]}'),
                 )
             )
-            
+
         users_headline = flet.Text(
             value="Users",
             style=flet.TextStyle(
@@ -45,6 +46,8 @@ class HomePageView(Xview):
             ),
             text_align=flet.TextAlign.CENTER,
         )
+        
+
         return flet.View(
             horizontal_alignment=flet.CrossAxisAlignment.CENTER,
             vertical_alignment=flet.MainAxisAlignment.CENTER,

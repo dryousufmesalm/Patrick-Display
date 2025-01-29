@@ -15,9 +15,9 @@ def main(page: flet.Page):
     # Register the page to the AppState to allow changing the page route from anywhere
     page.title = "Patrick Display"
 
+
     Xapp(
         page=page,
-
         routes=[
             route(route=AppRoutes.ADD_ACCOUNT, view=AddAccountView),
             route(route=AppRoutes.LOGIN_PB, view=RemoteLoginPageView),
