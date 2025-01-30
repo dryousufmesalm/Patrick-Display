@@ -14,7 +14,6 @@ from cycles.cycles_manager import cycles_manager
 
 
 # Create an MetaTrader of the MetaTraderExpert class
-expert = MetaTrader(135651648, "uPBGz2Mfvv5PnR!", "Exness-MT5Trial")
 # Check if the connection was successful
 # Initialize the API handler
 
