@@ -12,7 +12,7 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Python 3.13.0
       uses: actions/setup-python@v4
@@ -29,7 +29,7 @@ jobs:
         flet pack .\main.py
     
     - name: Upload EXE
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: main
         path: dist/main.exe
