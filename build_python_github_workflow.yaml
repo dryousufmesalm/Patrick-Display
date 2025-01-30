@@ -30,8 +30,9 @@ jobs:
         flet pack .\main.py
     
     - name: Upload EXE
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: main
         path: dist/main.exe
+
         
