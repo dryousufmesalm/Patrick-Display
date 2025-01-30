@@ -15,6 +15,7 @@ class Mt5LoginPageView(Xview):
     def build(self):
         user_id = self.get_param('user')
         account = self.get_param('account')
+
         def on_program_path_picker_pressed(e: flet.FilePickerResultEvent):
             if e.files:
                 program_path_text.value = e.files[0].path
@@ -24,7 +25,8 @@ class Mt5LoginPageView(Xview):
 
         async def return_back(e):
             self.back()
-        async def on_login( e):
+
+        async def on_login(e):
             login_progress.visible = True
             login_progress.update()
             await asyncio.sleep(1)
@@ -47,7 +49,6 @@ class Mt5LoginPageView(Xview):
                 self.back()
                 mt5_logger = MT5LoginRepo(engine=engine)
                 mt5_logger.set_mt5_credentials(data)
-                
 
             else:
                 app_logger.error(msg=f"Login failed")
@@ -85,6 +86,7 @@ class Mt5LoginPageView(Xview):
         program_path_picker_dialog = flet.FilePicker(
             on_result=on_program_path_picker_pressed,
         )
+
         select_program_path_button = flet.Button(
             text="Select Program Path",
             icon=flet.Icons.UPLOAD_FILE,
@@ -111,6 +113,7 @@ class Mt5LoginPageView(Xview):
                 username,
                 password,
                 server,
+                program_path_picker_dialog,
                 flet.Row(
                     controls=[
                         select_program_path_button,
