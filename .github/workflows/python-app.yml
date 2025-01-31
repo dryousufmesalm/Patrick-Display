@@ -41,6 +41,7 @@ jobs:
         tag_name: v1.0.${{ github.run_number }}
         release_name: Patrick v1.0.${{ github.run_number }}
         prerelease: false
+        draft: false
         body: |
           Changes in this Release:
           - Added a new feature
