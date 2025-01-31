@@ -47,7 +47,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        files: .\dist\Patrick_v1.0.${{ github.run_number }}.exe
+        files: .\dist
         tag_name: v1.0.${{ github.run_number }}
         name: Patrick v1.0.${{ github.run_number }}
         body: |
