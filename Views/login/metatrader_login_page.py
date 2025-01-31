@@ -105,8 +105,6 @@ class Mt5LoginPageView(Xview):
 
         program_path_text = flet.Text(
             value=credentials.program_path if credentials is not None else "",
-            font_size=16,
-            text_align=flet.TextAlign.CENTER,
         )
         login_progress = flet.ProgressBar(visible=False)
         return flet.View(
