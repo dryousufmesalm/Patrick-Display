@@ -27,3 +27,4 @@ class CtCyclesOrders (SQLModel, table=True):
     volume: int
     is_closed: bool
     trailing_steps: int
+    account: str|None = Field(default=None)

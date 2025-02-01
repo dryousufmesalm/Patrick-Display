@@ -5,12 +5,15 @@ from helpers.action_types import (
 )
 
 
-def add_user(user_data, auth_api):
+def add_user(user_data, auth_api, username, password):
     return {
         'type': ADD_USER,
         'payload': {
             'user_data': user_data,
-            'auth': auth_api
+            'auth': auth_api,
+            'username': username,
+            'password': password,
+
         }
 
 

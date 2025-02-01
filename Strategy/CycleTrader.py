@@ -265,7 +265,7 @@ class CycleTrader(Strategy):
        
     # get all active  cycles
     def get_all_active_cycles(self):
-        cycles = self.local_api.get_active_cycles()
+        cycles = self.local_api.get_active_cycles(self.bot.account.id)
         active_cycles = [cycle for cycle in cycles if cycle.is_closed is False]
         return active_cycles
     # open new cycle automatically every threshold pips from the last cycle with limit max cycles 

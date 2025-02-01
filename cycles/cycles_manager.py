@@ -21,11 +21,11 @@ class cycles_manager:
     
      
     def get_all_AH_active_cycles(self):
-        cycles = self.ah_repo.get_active_cycles()
+        cycles = self.ah_repo.get_active_cycles(self.account.id)
         active_cycles = [cycle for cycle in cycles if cycle.is_closed is False]
         return active_cycles
     def get_all_CT_active_cycles(self):
-        cycles = self.ct_repo.get_active_cycles()
+        cycles = self.ct_repo.get_active_cycles(self)
         active_cycles = [cycle for cycle in cycles if cycle.is_closed is False]
         return active_cycles
     def  get_remote_AH_active_cycles(self):

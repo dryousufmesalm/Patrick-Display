@@ -11,7 +11,7 @@ class MetaTrader:
         self.password = password
         self.server = server
         self.authorized = False
-        self.account_id = None
+        self.account_id = username
 
     def initialize(self, path):
         launched = False
@@ -33,6 +33,7 @@ class MetaTrader:
             if self.username != "":
                 self.authorized = Mt5.login(self.username)
                 store.Mt5_authorized = self.authorized
+                self.account_id = self.username
                 return self.authorized
             else:
                 print('Please provide your MetaTrader 5 account number and password.')
@@ -134,6 +135,7 @@ class MetaTrader:
         result = Mt5.order_send(request)
         if result.retcode != Mt5.TRADE_RETCODE_DONE:
             print("2. order_send failed, retcode={}".format(result.retcode))
+            return []
         # request the result as a dictionary and display it element by element
         result_dict = result._asdict()
         ticket = result_dict["order"]
@@ -186,6 +188,7 @@ class MetaTrader:
         result = Mt5.order_send(request)
         if result.retcode != Mt5.TRADE_RETCODE_DONE:
             print("2. order_send failed, retcode={}".format(result.retcode))
+            return []
 
         # request the result as a dictionary and display it element by element
         result_dict = result._asdict()
@@ -256,6 +259,7 @@ class MetaTrader:
         result = Mt5.order_send(request)
         if result.retcode != Mt5.TRADE_RETCODE_DONE:
             print("2. order_send failed, retcode={}".format(result.retcode))
+            return []
         # request the result as a dictionary and display it element by element
         result_dict = result._asdict()
         ticket = result_dict["order"]
@@ -308,6 +312,7 @@ class MetaTrader:
         result = Mt5.order_send(request)
         if result.retcode != Mt5.TRADE_RETCODE_DONE:
             print("2. order_send failed, retcode={}".format(result.retcode))
+            return []
         # request the result as a dictionary and display it element by element
         result_dict = result._asdict()
         ticket = result_dict["order"]
@@ -360,6 +365,7 @@ class MetaTrader:
         result = Mt5.order_send(request)
         if result.retcode != Mt5.TRADE_RETCODE_DONE:
             print(f"2. order_send failed, retcode={result.retcode}")
+            return []
         # request the result as a dictionary and display it element by element
         result_dict = result._asdict()
         ticket = result_dict["order"]
@@ -412,6 +418,7 @@ class MetaTrader:
         result = Mt5.order_send(request)
         if result.retcode != Mt5.TRADE_RETCODE_DONE:
             print("2. order_send failed, retcode={}".format(result.retcode))
+            return []
         # request the result as a dictionary and display it element by element
         result_dict = result._asdict()
         ticket = result_dict["order"]

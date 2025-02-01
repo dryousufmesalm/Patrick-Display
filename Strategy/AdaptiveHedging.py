@@ -271,10 +271,10 @@ class AdaptiveHedging(Strategy):
        
     # get all active  cycles
     def get_all_active_cycles(self):
-        cycles = self.local_api.get_active_cycles()
+        cycles = self.local_api.get_active_cycles(self.bot.account.id)
         if cycles is None:
             return []
-        active_cycles = [cycle for cycle in cycles if cycle.is_closed is False]
+        active_cycles = [cycle for cycle in cycles if cycle.account ==self.bot.account.id and cycle.bot == self.bot.id]
         return active_cycles
     # Cycles  Manager 
     

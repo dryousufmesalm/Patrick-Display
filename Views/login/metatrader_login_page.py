@@ -6,6 +6,8 @@ from Views.globals.app_router import AppRouter, AppRoutes
 from DB.mt5_login.repositories.mt5_login_repo import MT5LoginRepo
 from DB.db_engine import engine
 from fletx import Xview
+from helpers.store import store
+from helpers.actions_creators import GetUser
 
 
 class Mt5LoginPageView(Xview):
@@ -15,6 +17,17 @@ class Mt5LoginPageView(Xview):
     def build(self):
         user_id = self.get_param('user')
         account = self.get_param('account')
+        user_data = GetUser(user_id)
+        if not user_data:
+            self.back()
+        server_username = user_data.get('username')
+        server_password = user_data.get('password')
+
+        def get_mt5_account_id():
+            for acc in user_data.get('accounts'):
+                if acc.id == account:
+                    return acc.meta_trader_id
+        mt5_account_id = get_mt5_account_id()
 
         def on_program_path_picker_pressed(e: flet.FilePickerResultEvent):
             if e.files:
@@ -35,11 +48,11 @@ class Mt5LoginPageView(Xview):
                 "password":   password.value,
                 "server":   server.value,
                 "program_path":   program_path_text.value,
-                "user": user_id,
-                "account": account,
+                "server_username": server_username,
+                "server_password": server_password,
 
             }
-            result = await auth.launch_metatrader(**data)
+            result = auth.launch_metatrader_in_process(data)
 
             login_progress.visible = False
 
@@ -58,7 +71,7 @@ class Mt5LoginPageView(Xview):
                 mt5_logger = MT5LoginRepo(engine=engine)
 
                 # Assuming `local_auth` has a method `get_credentials` returning a dict with keys 'username' and 'password'
-                credentials = mt5_logger.get_mt5_credentials()
+                credentials = mt5_logger.get_mt5_credentials(mt5_account_id)
                 if credentials is None:
                     return None
 

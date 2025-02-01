@@ -21,7 +21,9 @@ def users(state, action):
             'token': user_data.token,
             'authorized': True,
             'accounts': [],
-            'auth_api': auth
+            'auth_api': auth,
+            'username': payload['username'],
+            'password': payload['password'],
         }
 
         return {

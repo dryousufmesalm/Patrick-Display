@@ -1,34 +1,49 @@
-from sqlmodel import Session,select
+from sqlmodel import Session, select
 from sqlalchemy.exc import SQLAlchemyError
 from DB.ah_strategy.models.ah_cycles import AHCycle
 from DB.ah_strategy.models.ah_cycles_orders import AhCyclesOrders
 from datetime import datetime
+
+
 class AHRepo:
     def __init__(self, engine):
         self.engine = engine
-    
 
     def get_cycle(self) -> AHCycle | None:
         with Session(self.engine) as session:
             result = session.get(AHCycle, 1)
             return result
+
     def get_cycle_by_id(self, id) -> AHCycle | None:
         with Session(self.engine) as session:
             result = session.get(AHCycle, id)
             return result
+
     def get_cycle_by_remote_id(self, remote_id) -> AHCycle | None:
         with Session(self.engine) as session:
-            result = session.exec(select(AHCycle).where(AHCycle.remote_id == remote_id)).first()
+            result = session.exec(select(AHCycle).where(
+                AHCycle.remote_id == remote_id)).first()
             return result
-    def get_active_cycles(self) -> list[AHCycle] | None:
+
+    def get_active_cycles(self, account) -> list[AHCycle] | None:
+        """
+        Retrieve all active cycles for a given account.
+
+        :param account: The account to filter active cycles.
+        :return: A list of active AHCycle objects or None.
+        """
         with Session(self.engine) as session:
-            result = session.exec(select(AHCycle).where(AHCycle.is_closed == False)).all()
-            return result
+            cycles = session.exec(select(AHCycle).where(AHCycle.is_closed == False)).all()
+            
+            active_cycles = [cycle for cycle in cycles if cycle.account == account ]
+            return active_cycles
+
     def get_all_cycles(self) -> list[AHCycle] | None:
         with Session(self.engine) as session:
             result = session.exec(select(AHCycle)).all()
             return result
-    def create_cycle(self,cycle_data) -> AHCycle | None:
+
+    def create_cycle(self, cycle_data) -> AHCycle | None:
         try:
             with Session(self.engine) as session:
                 new_cycle = AHCycle(**cycle_data)
@@ -39,7 +54,8 @@ class AHRepo:
         except SQLAlchemyError as e:
             print(f"Failed to create AH cycle: {e}")
             return None
-    def Update_cycle(self,id,cycle_data) -> AHCycle | None:
+
+    def Update_cycle(self, id, cycle_data) -> AHCycle | None:
         try:
             with Session(self.engine) as session:
                 cycle = session.get(AHCycle,    id)
@@ -54,7 +70,8 @@ class AHRepo:
         except SQLAlchemyError as e:
             print(f"Failed to update AH cycle: {e}")
             return None
-    def update_cycle_by_remote_id(self,remote_id, cycle_data) -> AHCycle | None:
+
+    def update_cycle_by_remote_id(self, remote_id, cycle_data) -> AHCycle | None:
         try:
             with Session(self.engine) as session:
                 cycle = self.get_cycle_by_remote_id(remote_id)
@@ -69,6 +86,7 @@ class AHRepo:
         except SQLAlchemyError as e:
             print(f"Failed to update AH cycle: {e}")
             return None
+
     def close_cycle(self, cycle_id) -> AHCycle | None:
         try:
             with Session(self.engine) as session:
@@ -83,6 +101,7 @@ class AHRepo:
         except SQLAlchemyError as e:
             print(f"Failed to close AH cycle: {e}")
             return None
+
     def create_order(self, order_data) -> AhCyclesOrders | None:
         try:
             with Session(self.engine) as session:
@@ -94,6 +113,7 @@ class AHRepo:
         except SQLAlchemyError as e:
             print(f"Failed to create AH order: {e}")
             return None
+
     def close_order(self, order_id) -> AhCyclesOrders | None:
         try:
             with Session(self.engine) as session:
@@ -108,30 +128,41 @@ class AHRepo:
         except SQLAlchemyError as e:
             print(f"Failed to close AH order: {e}")
             return None
+
     def get_order_by_ticket(self, ticket) -> AhCyclesOrders | None:
         with Session(self.engine) as session:
-            result = session.exec(select(AhCyclesOrders).where(AhCyclesOrders.ticket == ticket)).first()
+            result = session.exec(select(AhCyclesOrders).where(
+                AhCyclesOrders.ticket == ticket)).first()
             return result
+
     def get_order_by_id(self, id) -> list[AhCyclesOrders] | None:
-        with  Session(self.engine) as session:
+        with Session(self.engine) as session:
             result = session.get(AhCyclesOrders, id)
             return result
+
     def get_orders_by_cycle_id(self, cycle_id) -> list[AhCyclesOrders] | None:
         with Session(self.engine) as session:
-            result = session.exec(select(AhCyclesOrders).where(AhCyclesOrders.cycle_id == cycle_id)).all()
+            result = session.exec(select(AhCyclesOrders).where(
+                AhCyclesOrders.cycle_id == cycle_id)).all()
             return result
+
     def get_open_pending_orders(self) -> list[AhCyclesOrders] | None:
         with Session(self.engine) as session:
-            result = session.exec(select(AhCyclesOrders).where(AhCyclesOrders.is_closed == False and AhCyclesOrders.is_pending == True)).all()
+            result = session.exec(select(AhCyclesOrders).where(
+                AhCyclesOrders.is_closed == False and AhCyclesOrders.is_pending == True)).all()
             return result
+
     def get_all_orders(self) -> list[AhCyclesOrders] | None:
         with Session(self.engine) as session:
             result = session.exec(select(AhCyclesOrders)).all()
             return result
+
     def get_open_orders_only(self) -> list[AhCyclesOrders] | None:
         with Session(self.engine) as session:
-            result = session.exec(select(AhCyclesOrders).where(AhCyclesOrders.is_closed == False)).all()
+            result = session.exec(select(AhCyclesOrders).where(
+                AhCyclesOrders.is_closed == False)).all()
             return result
+
     def update_order_by_ticket(self, ticket, order_data) -> AhCyclesOrders | None:
         try:
             with Session(self.engine) as session:
@@ -147,7 +178,7 @@ class AHRepo:
         except SQLAlchemyError as e:
             print(f"Failed to update AH order: {e}")
             return None
-        
+
     def update_order_by_id(self, id, order_data) -> AhCyclesOrders | None:
         try:
             with Session(self.engine) as session:
@@ -163,5 +194,3 @@ class AHRepo:
         except SQLAlchemyError as e:
             print(f"Failed to update AH order: {e}")
             return None
-        
-    

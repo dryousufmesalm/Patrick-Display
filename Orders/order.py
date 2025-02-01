@@ -27,6 +27,7 @@ class order:
         self.Mt5 = mt5
         self.local_api = local_api
         self.id = getattr(order_data, 'id', "")
+        self.account = self.Mt5.account_id
 
     def to_dict(self):
         return {
@@ -48,6 +49,7 @@ class order:
             "volume": self.volume,
             "is_closed": self.is_closed,
             "trailing_steps": self.trailing_steps,
+            "account":  self.account,
         }
 
     def update_from_mt5(self):

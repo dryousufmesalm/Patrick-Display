@@ -8,13 +8,13 @@ from Views.users.AccountPageView import AccountPageView
 from Views.users.BotsPageView import BotsPageView
 from Views.home.homepage import HomePageView
 from Views.globals.app_router import AppRoutes
+import multiprocessing
 
 
 def main(page: flet.Page):
     # 0. Register Globals
     # Register the page to the AppState to allow changing the page route from anywhere
     page.title = "Patrick Display"
-
 
     Xapp(
         page=page,
@@ -31,4 +31,6 @@ def main(page: flet.Page):
     )
 
 
-flet.app(main)
+if __name__ == "__main__":
+    multiprocessing.freeze_support()
+    flet.app(main)
