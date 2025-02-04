@@ -4,7 +4,7 @@ Module for adding an account view in Patrick Display.
 
 import flet
 from fletx import Xview
-from Views.globals.app_router import AppRoutes, AppRouter
+from Views.globals.app_router import AppRoutes
 from Views.globals.app_state import store
 
 

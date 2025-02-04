@@ -2,7 +2,7 @@ import flet
 import asyncio
 from Views.auth import auth
 from Views.globals.app_logger import app_logger
-from Views.globals.app_router import AppRouter, AppRoutes
+from Views.globals.app_router import  AppRoutes
 from DB.mt5_login.repositories.mt5_login_repo import MT5LoginRepo
 from DB.db_engine import engine
 from fletx import Xview

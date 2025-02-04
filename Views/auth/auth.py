@@ -1,7 +1,6 @@
 
 from Views.globals.app_logger import app_logger
 from Views.globals.app_configs import AppConfigs
-from Views.globals.app_router import AppRouter
 from helpers.store import store
 from helpers.actions_creators import add_user, add_mt5, GetUser
 from Api.APIHandler import API
@@ -57,8 +56,7 @@ async def login(
 
     except Exception as e:
         # Show snackbar with the error message
-        AppRouter.snackbar("Login failed, Worng Credentials!")
-        # log the error
+        # # log the error
         app_logger.error(f"Login failed: {e}")
         return (False, "Login failed")
 

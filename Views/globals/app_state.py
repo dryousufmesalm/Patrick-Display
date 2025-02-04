@@ -1,4 +1,4 @@
-from .app_router import AppRouter, AppRoutes
+from .app_router import AppRoutes
 
 class AppState:
     login_data: dict[str, str]

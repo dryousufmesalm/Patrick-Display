@@ -17,7 +17,10 @@ class RemoteLoginRepo:
                 print("result", login)
                 return login
             return None
-    
+    def get_All_users(self):
+        with Session(self.engine) as session:
+            result = session.exec(select(RemoteLogin)).all()
+            return result
     def set_pb_credentials(self, data) -> RemoteLogin | None:
         """Set MT5 credentials."""
         with Session (self.engine) as session:

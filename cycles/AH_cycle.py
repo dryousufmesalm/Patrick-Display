@@ -164,8 +164,7 @@ class cycle:
                 self.total_volume += order_data.volume
                 # check if order is already closed
                 if order_data.is_closed:
-                    if  order_ticket not in self.closed:
-                        self.closed.append(order_ticket)
+                    
                     order_kind= order_data.kind
                     if order_kind == "initial":
                         self.remove_initial_order(order_ticket)
@@ -175,6 +174,8 @@ class cycle:
                         self.remove_recovery_order(order_ticket)
                     elif order_kind == "pending":
                         self.remove_pending_order(order_ticket)
+                    if  order_ticket not in self.closed:
+                        self.closed.append(order_ticket)
                 if order_data.is_pending is False and order_ticket in self.pending:
                     self.remove_pending_order(order_ticket)
                     self.add_initial_order(order_ticket)    

@@ -7,6 +7,8 @@ from fletx import Xview
 class HomePageView(Xview):
     def build(self):
 
+        # You can use subscribe() to update the UI in response to state changes
+
         headline = flet.Text(
             value="Patrick Display",
             style=flet.TextStyle(
@@ -25,17 +27,50 @@ class HomePageView(Xview):
 
         states = store.get_state()
         users = states['users']['users']
-        user_buttons = []
+        user_buttons = flet.ListView(spacing=10)
+
         for user in users:
-            user_buttons.append(
-                flet.ElevatedButton(
-                    text=user['name'],
-                    expand=False,
-                    width=300,
-                    on_click=lambda e, user=user: self.go(
-                        f'/accounts/{user["id"]}'),
+            user_buttons.controls.append(
+                flet.Row(
+                    controls=[
+                        flet.ElevatedButton(
+                            text=user['name'],
+                            expand=False,
+                            width=300,
+                            on_click=lambda e, user=user: self.go(
+                                f'/accounts/{user["id"]}'),
+                        )
+                    ],
+                    alignment=flet.MainAxisAlignment.CENTER,
+                    spacing=10
                 )
             )
+
+        def on_state_change():
+            state = store.get_state()
+
+            users = state['users']['users']
+            user_buttons.controls.clear()  # Clear existing buttons before adding new ones
+            for user in users:
+                user_buttons.controls.append(
+                    flet.Row(
+                        controls=[
+                            flet.ElevatedButton(
+                                text=user['name'],
+                                expand=False,
+                                width=300,
+                                on_click=lambda e, user=user: self.go(
+                                    f'/accounts/{user["id"]}'),
+                            )
+                        ],
+                        alignment=flet.MainAxisAlignment.CENTER,
+
+                    )
+                )
+
+            self.page.update()
+            # self.page.run_task(lambda: _update_ui(state))
+        store.subscribe(on_state_change)
 
         users_headline = flet.Text(
             value="Users",
@@ -46,7 +81,6 @@ class HomePageView(Xview):
             ),
             text_align=flet.TextAlign.CENTER,
         )
-        
 
         return flet.View(
             horizontal_alignment=flet.CrossAxisAlignment.CENTER,
@@ -55,7 +89,7 @@ class HomePageView(Xview):
                 headline,
                 add_account_button,
                 users_headline,
-                *user_buttons,
+                user_buttons,
             ]
 
         )

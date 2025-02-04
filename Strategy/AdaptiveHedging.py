@@ -98,10 +98,10 @@ class AdaptiveHedging(Strategy):
                         ask=    self.meta_trader.get_ask(self.symbol)
                         if(price>ask):
                             #buy stop
-                            order1= self.meta_trader.buy_stop(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"initial")
+                            order1= self.meta_trader.buy_stop(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"pending")
                             self.create_cycle(order1,None,True,sent_by_admin,user_id,username)
                         else:
-                            order1=self.meta_trader.buy_limit(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"initial")        
+                            order1=self.meta_trader.buy_limit(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"pending")        
                             self.create_cycle(order1,None,True,sent_by_admin,user_id,username)
                 elif cycle_type==1:
                     if(price==0):
@@ -111,10 +111,10 @@ class AdaptiveHedging(Strategy):
                         bid=    self.meta_trader.get_bid(self.symbol)
                         if(price<bid):
                             #sell stop
-                            order1= self.meta_trader.sell_stop(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"initial")
+                            order1= self.meta_trader.sell_stop(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"pending")
                             self.create_cycle(order1,None,True,sent_by_admin,user_id,username)
                         else:
-                            order1=self.meta_trader.sell_limit(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"initial")        
+                            order1=self.meta_trader.sell_limit(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"pending")        
                             self.create_cycle(order1,None,True,sent_by_admin,user_id,username)
                 elif cycle_type==2:
                     if(price==0):
@@ -126,12 +126,12 @@ class AdaptiveHedging(Strategy):
                         bid=    self.meta_trader.get_bid(self.symbol)
                         if(price>ask):
                             #buy stop
-                            order1= self.meta_trader.buy_stop(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"initial")
-                            order2= self.meta_trader.sell_limit(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"initial")
+                            order1= self.meta_trader.buy_stop(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"pending")
+                            order2= self.meta_trader.sell_limit(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"pending")
                             self.create_cycle(order1,order2,True,sent_by_admin,user_id,username)
                         elif price<bid:
-                            order1= self.meta_trader.buy_limit(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"initial")        
-                            order2= self.meta_trader.sell_stop(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"initial")        
+                            order1= self.meta_trader.buy_limit(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"pending")        
+                            order2= self.meta_trader.sell_stop(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"pending")        
                             self.create_cycle(order1,order2,True,sent_by_admin,user_id,username)
             # close cycle
         elif message=="close_cycle":

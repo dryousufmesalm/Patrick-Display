@@ -8,6 +8,16 @@ from Views.users.AccountPageView import AccountPageView
 from Views.users.BotsPageView import BotsPageView
 from Views.home.homepage import HomePageView
 from Views.globals.app_router import AppRoutes
+from Views.globals.app_logger import app_logger
+import threading
+import asyncio
+
+from DB.remote_login.repositories.remote_login_repo import RemoteLoginRepo
+
+from Views.auth.auth import login
+from DB.db_engine import engine
+from helpers.store import store
+
 import multiprocessing
 
 
@@ -29,6 +39,20 @@ def main(page: flet.Page):
             route(route=AppRoutes.BOTS, view=BotsPageView),
         ],
     )
+
+    async def fetch_data():
+        try:
+            remote_logger = RemoteLoginRepo(engine=engine)
+            users = remote_logger.get_All_users()
+            for user in users:
+                await login(user.username, user.password)
+            page.update()
+        except Exception as e:
+            app_logger.error(f"Failed to load saved credentials: {e}")
+
+        # Start API call in a background thread
+    threading.Thread(target=lambda: asyncio.run(
+        fetch_data()), daemon=True).start()
 
 
 if __name__ == "__main__":
