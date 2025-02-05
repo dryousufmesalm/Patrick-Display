@@ -42,7 +42,7 @@ class Account:
             self.init_bots()
             self.update_symbols()
 
-    def     validate(self):
+    def validate(self):
         """ Validate the account """
         self.mt5_accounts_info = self.meta_trader.get_account_info()
         self.meta_trader_id = self.mt5_accounts_info["login"]
@@ -115,7 +115,7 @@ class Account:
     def Refresh_token(self):
         """ Refresh the token for the account """
         try:
-            self.client.refresh_token()
+            self.client.Refresh_token()
             print(f"Token refreshed for account {self.name}!")
         except (ConnectionError, TimeoutError) as e:
             print(f"Failed to refresh token due to connection issue: {e}")
