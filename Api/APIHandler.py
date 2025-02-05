@@ -38,6 +38,8 @@ class API:
             user_data = self.client.collection("users").authRefresh()
             self.token = user_data.token
             self.authenticated = user_data.is_valid
+            print(f"Token refreshed for account {self.user_name}!")
+            print(f"is authenticated: {self.authenticated}")
             return user_data
         except Exception as e:
             logging.error(f"Failed to refresh token: {e}")

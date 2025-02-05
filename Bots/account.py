@@ -109,7 +109,7 @@ class Account:
         evens_thread.start()
         print("Subscription thread started!")
 
-        refresh_token = threading.Timer(3600, self.Refresh_token)
+        refresh_token = threading.Timer(120, self.Refresh_token)
         refresh_token.start()
 
     def Refresh_token(self):

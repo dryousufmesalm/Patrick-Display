@@ -39,6 +39,7 @@ def main(page: flet.Page):
             route(route=AppRoutes.BOTS, view=BotsPageView),
         ],
     )
+    page.on_close = terminate_all_processes
 
     async def fetch_data():
         try:
@@ -53,6 +54,14 @@ def main(page: flet.Page):
         # Start API call in a background thread
     threading.Thread(target=lambda: asyncio.run(
         fetch_data()), daemon=True).start()
+
+
+def terminate_all_processes():
+    for process in multiprocessing.active_children():
+        process.terminate()
+    for thread in threading.enumerate():
+        if thread is not threading.main_thread():
+            thread.join()
 
 
 if __name__ == "__main__":
