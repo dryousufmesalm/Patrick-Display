@@ -89,6 +89,8 @@ def launch_metatrader(data, authorized):
         cyclesManager.run_in_thread()
         print(acc)
         authorized.put(True)
+        while True:
+            pass
     except Exception as e:
         # Show snackbar with the error message
         # log the error

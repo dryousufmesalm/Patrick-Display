@@ -36,6 +36,7 @@ class API:
         """Refresh the token."""
         try:
             user_data = self.client.collection("users").authRefresh()
+            self.client.auth_store.save(user_data.token)
             self.token = user_data.token
             self.authenticated = user_data.is_valid
             print(f"Token refreshed for account {self.user_name}!")

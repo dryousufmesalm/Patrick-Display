@@ -109,24 +109,24 @@ class Account:
         evens_thread.start()
         print("Subscription thread started!")
 
-        refresh_token = threading.Timer(10000, self.Refresh_token)
+        refresh_token = threading.Thread(target=self.Refresh_token, daemon=True)
         refresh_token.start()
 
     def Refresh_token(self):
         """ Refresh the token for the account """
-        pass
-        # try:
-        #     # self.client.Refresh_token()
-        #     print(f"Token refreshed for account {self.name}!")
-        # except (ConnectionError, TimeoutError) as e:
-        #     print(f"Failed to refresh token due to connection issue: {e}")
-        # except KeyError as e:
-        #     print(f"Failed to refresh token due to missing key: {e}")
-        # except ValueError as e:
-        #     print(f"Failed to refresh token due to value error: {e}")
-        # except Exception as e:
-        #     print(f"Failed to refresh token due to an unexpected error: {e}")
-
+        while True:
+            try:
+                self.client.Refresh_token()
+                print(f"Token refreshed for account {self.name}!")
+            except (ConnectionError, TimeoutError) as e:
+                print(f"Failed to refresh token due to connection issue: {e}")
+            except KeyError as e:
+                print(f"Failed to refresh token due to missing key: {e}")
+            except ValueError as e:
+                print(f"Failed to refresh token due to value error: {e}")
+            except Exception as e:
+                print(f"Failed to refresh token due to an unexpected error: {e}")
+            time.sleep(604800)
     def init_bots(self):
         """ Initialize the bots for the account """
         try:
