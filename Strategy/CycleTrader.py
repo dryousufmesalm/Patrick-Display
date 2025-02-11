@@ -93,46 +93,50 @@ class CycleTrader(Strategy):
                 if(cycle_type==0):
                     if(price==0):
                         order1=self.meta_trader.buy(self.symbol,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"initial")
-                        self.create_cycle(order1,None,False,sent_by_admin,user_id,username)
+                        self.create_cycle(
+                            order1, None, False, sent_by_admin, user_id, username, "BUY")
                     elif(price>0):
                         ask=    self.meta_trader.get_ask(self.symbol)
                         if(price>ask):
                             #buy stop
                             order1= self.meta_trader.buy_stop(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"pending")
-                            self.create_cycle(order1,None,True,sent_by_admin,user_id,username)
+                            self.create_cycle(order1, None, True, sent_by_admin, user_id, username,"BUY")
                         else:
                             order1=self.meta_trader.buy_limit(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"pending")        
-                            self.create_cycle(order1,None,True,sent_by_admin,user_id,username)
+                            self.create_cycle(order1, None, True, sent_by_admin, user_id, username,"BUY")
                 elif cycle_type==1:
                     if(price==0):
                         order1=self.meta_trader.sell(self.symbol,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"initial")
-                        self.create_cycle(order1,None,False,sent_by_admin,user_id,username)
+                        self.create_cycle(
+                            order1, None, False, sent_by_admin, user_id, username, "SELL")
                     elif(price>0):
                         bid=    self.meta_trader.get_bid(self.symbol)
                         if(price<bid):
                             #sell stop
                             order1= self.meta_trader.sell_stop(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"pending")
-                            self.create_cycle(order1,None,True,sent_by_admin,user_id,username)
+                            self.create_cycle(
+                                order1, None, True, sent_by_admin, user_id, username, "SELL")
                         else:
                             order1=self.meta_trader.sell_limit(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"pending")        
-                            self.create_cycle(order1,None,True,sent_by_admin,user_id,username)
+                            self.create_cycle(
+                                order1, None, True, sent_by_admin, user_id, username, "SELL")
                 elif cycle_type==2:
                     if(price==0):
                         order1=self.meta_trader.buy(self.symbol,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"initial")
                         order2=self.meta_trader.sell(self.symbol,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"initial")
-                        self.create_cycle(order1,order2,False,sent_by_admin,user_id,username)
+                        self.create_cycle(order1,order2,False,sent_by_admin,user_id,username,"BUY&SELL")
                     elif(price>0):
                         ask=    self.meta_trader.get_ask(self.symbol)
                         bid=    self.meta_trader.get_bid(self.symbol)
                         if(price>ask):
                             #buy stop
                             order1= self.meta_trader.buy_stop(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"pending")
-                            order2= self.meta_trader.sell_limit(self.symbol,price,self.lot_sizes[0],self.bot.magic,0, 0,"PIPS",self.slippage,"pending")
-                            self.create_cycle(order1,order2,True,sent_by_admin,user_id,username)
+                            # order2= self.meta_trader.sell_limit(self.symbol,price,self.lot_sizes[0],self.bot.magic,0, 0,"PIPS",self.slippage,"pending")
+                            self.create_cycle(order1,None,True,sent_by_admin,user_id,username,"BUY&SELL")
                         elif price<bid:
                             order1= self.meta_trader.buy_limit(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"pending")        
-                            order2= self.meta_trader.sell_stop(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"pending")        
-                            self.create_cycle(order1,order2,True,sent_by_admin,user_id,username)
+                            # order2= self.meta_trader.sell_stop(self.symbol,price,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"pending")        
+                            self.create_cycle(order1,None,True,sent_by_admin,user_id,username,"BUY&SELL")
             # close cycle
         elif message=="close_cycle":
             username = content["user_name"]
@@ -195,7 +199,7 @@ class CycleTrader(Strategy):
         float_array = [float(value.strip()) for value in string.split(",")]
         return float_array
 
-    def create_cycle(self,order1,order2,is_pending,sent_by_admin,user_id,username):
+    def create_cycle(self, order1, order2, is_pending, sent_by_admin, user_id, username, cycle_type):
         """
         This function creates a cycle.
 
@@ -223,12 +227,13 @@ class CycleTrader(Strategy):
             },
             "lot_idx": 0,
             "status": "initial",
+            "cycle_type": cycle_type,
             "lower_bound": round(lower_bound, 2),
             "upper_bound": round(upper_bound, 2),
             "is_pending": is_pending,
             "type": "initial",
-            "total_volume": round(123, 2),
-            "total_profit": round(123, 2),
+            "total_volume": round(0, 2),
+            "total_profit": round(0, 2),
             "initial": [],
             "hedge": [],
             "pending": [],
@@ -252,7 +257,7 @@ class CycleTrader(Strategy):
                 New_cycle.add_pending_order(order1[0].ticket)
             else:
                 New_cycle.add_initial_order(order1[0].ticket)
-        if order2:
+        if order2 and order2 != -2:
             order_obj = order( order2[0], is_pending,self.meta_trader,self.local_api,"mt5")
             order_obj.create_order()
             if is_pending:
@@ -280,7 +285,8 @@ class CycleTrader(Strategy):
                 if self.stop is False:
                     order1=self.meta_trader.buy(self.symbol,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"initial")
                     order2=self.meta_trader.sell(self.symbol,self.lot_sizes[0],self.bot.magic,0,0,"PIPS",self.slippage,"initial")
-                    self.create_cycle(order1,order2,False,False,0,"MetaTrader5")
+                    self.create_cycle(order1, order2, False,
+                                      False, 0, "MetaTrader5", "BUY&SELL")
                     self.last_cycle_price=ask if ask>=up_price else bid if bid<=down_price else 0
     def  run(self):
         """

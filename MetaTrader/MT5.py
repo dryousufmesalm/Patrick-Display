@@ -1,5 +1,6 @@
 """ MetaTrader 5 expert advisor class to manage the MetaTrader 5 expert advisor. """
 import MetaTrader5 as Mt5
+
 from Views.globals.app_state import store
 
 
@@ -213,7 +214,7 @@ class MetaTrader:
     # get all orders
 
     def get_all_orders(self):
-        """ Get all orders """
+        """ Get all order open orders """
         return Mt5.orders_get()
     # buy stop
 

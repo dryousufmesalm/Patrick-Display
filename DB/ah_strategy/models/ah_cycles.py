@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List,Dict
+from typing import TYPE_CHECKING, List, Dict
 from sqlmodel import Field, SQLModel, Relationship, Column
 from sqlalchemy import JSON
 
@@ -6,11 +6,12 @@ import datetime
 if TYPE_CHECKING:
     from .ah_cycles_orders import AhCyclesOrders
 
+
 class AHCycle(SQLModel, table=True):
     __tablename__ = "ah_cycles"
     id: int | None = Field(default=None, primary_key=True)
     remote_id: int | None = Field(default=None, unique=True)
-    orders: list["AhCyclesOrders"] = Relationship(back_populates="cycle") 
+    orders: list["AhCyclesOrders"] = Relationship(back_populates="cycle")
     lower_bound: int
     upper_bound: int
     is_pending: bool
@@ -30,8 +31,9 @@ class AHCycle(SQLModel, table=True):
     pending: List[int] = Field(default_factory=list, sa_column=Column(JSON))
     closed: List[int] = Field(default_factory=list, sa_column=Column(JSON))
     recovery: List[int] = Field(default_factory=list, sa_column=Column(JSON))
-    max_recovery: List[int] = Field(default_factory=list, sa_column=Column(JSON))
+    max_recovery: List[int] = Field(
+        default_factory=list, sa_column=Column(JSON))
+    cycle_type: str | None
 
- 
     class Config:
-        arbitrary_types_allowed = True 
+        arbitrary_types_allowed = True

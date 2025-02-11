@@ -4,6 +4,7 @@ from Bots.bot import Bot
 from DB.db_engine import engine
 from DB.ah_strategy.repositories.ah_repo import AHRepo
 from DB.ct_strategy.repositories.ct_repo import CTRepo
+import asyncio
 
 
 class Account:
@@ -109,7 +110,8 @@ class Account:
         evens_thread.start()
         print("Subscription thread started!")
 
-        refresh_token = threading.Thread(target=self.Refresh_token, daemon=True)
+        refresh_token = threading.Thread(
+            target=self.Refresh_token, daemon=True)
         refresh_token.start()
 
     def Refresh_token(self):
@@ -125,8 +127,10 @@ class Account:
             except ValueError as e:
                 print(f"Failed to refresh token due to value error: {e}")
             except Exception as e:
-                print(f"Failed to refresh token due to an unexpected error: {e}")
+                print(
+                    f"Failed to refresh token due to an unexpected error: {e}")
             time.sleep(604800)
+
     def init_bots(self):
         """ Initialize the bots for the account """
         try:

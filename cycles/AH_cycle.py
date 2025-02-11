@@ -4,46 +4,70 @@ import MetaTrader5 as Mt5
 from DB.db_engine import engine
 from DB.ah_strategy.repositories.ah_repo import AHRepo
 from types import SimpleNamespace
+
+
 class cycle:
-    def __init__(self, data,mt5,bot,source=None):
-        self.bot_id = data.bot if source in ("db", "remote")  else data["bot"]
-        self.initial = data.initial if source == "db" else [] if source == "remote" else data["initial"]
-        self.hedge = data.hedge if source == "db" else  [] if source == "remote" else data["hedge"]
-        self.recovery =     data.recovery   if source == "db"   else [] if source == "remote" else data["recovery"]
-        self.pending =  data.pending    if source == "db"   else [] if source == "remote" else data["pending"]
-        self.closed =   data.closed if source == "db"   else [] if source == "remote" else data["closed"]
-        self.max_recovery = data.max_recovery if source == "db" else [] if source == "remote" else data["max_recovery"]
-        self.is_closed =    data.is_closed  if source in ("db", "remote")  else data['is_closed']
-        self.lower_bound =  data.lower_bound    if source in ("db", "remote") else data['lower_bound']  
-        self.upper_bound =  data.upper_bound        if source in ("db", "remote") else data['upper_bound']
-        self.lot_idx =  data.lot_idx    if source in ("db", "remote")  else data['lot_idx']
-        self.zone_index =   data.zone_index if source == "db" else 0 if source =="remote" else data['zone_index']
-        self.status =   data.status     if source in ("db", "remote") else data['status']
-        self.symbol =   data.symbol    if source in ("db", "remote") else data['symbol']
-        self.total_profit =     data.total_profit       if source in ("db", "remote") else data['total_profit']        
-        self.total_volume =     data.total_volume    if source in ("db", "remote") else data['total_volume']
-        self.closing_method =   data.closing_method   if source in ("db", "remote") else data['closing_method']
-        self.opened_by =    data.opened_by  if source in ("db", "remote") else data['opened_by']
-        self.account =  data.account    if source in ("db", "remote") else data['account']
-        self.id =   data.id   if source == "db" else ""
-        self.cycle_id = data.remote_id   if source == "db" else data.id if source == "remote" else ""
-        self.is_pending =   data.is_pending if source == "db" else False if source == "remote" else data['is_pending']
-        self.local_api = AHRepo(engine= engine)
+    def __init__(self, data, mt5, bot, source=None):
+        self.bot_id = data.bot if source in ("db", "remote") else data["bot"]
+        self.initial = data.initial if source == "db" else [
+        ] if source == "remote" else data["initial"]
+        self.hedge = data.hedge if source == "db" else [
+        ] if source == "remote" else data["hedge"]
+        self.recovery = data.recovery if source == "db" else [
+        ] if source == "remote" else data["recovery"]
+        self.pending = data.pending if source == "db" else [
+        ] if source == "remote" else data["pending"]
+        self.closed = data.closed if source == "db" else [
+        ] if source == "remote" else data["closed"]
+        self.max_recovery = data.max_recovery if source == "db" else [
+        ] if source == "remote" else data["max_recovery"]
+        self.is_closed = data.is_closed if source in (
+            "db", "remote") else data['is_closed']
+        self.lower_bound = data.lower_bound if source in (
+            "db", "remote") else data['lower_bound']
+        self.upper_bound = data.upper_bound if source in (
+            "db", "remote") else data['upper_bound']
+        self.lot_idx = data.lot_idx if source in (
+            "db", "remote") else data['lot_idx']
+        self.zone_index = data.zone_index if source == "db" else 0 if source == "remote" else data[
+            'zone_index']
+        self.status = data.status if source in (
+            "db", "remote") else data['status']
+        self.symbol = data.symbol if source in (
+            "db", "remote") else data['symbol']
+        self.total_profit = data.total_profit if source in (
+            "db", "remote") else data['total_profit']
+        self.total_volume = data.total_volume if source in (
+            "db", "remote") else data['total_volume']
+        self.closing_method = data.closing_method if source in (
+            "db", "remote") else data['closing_method']
+        self.opened_by = data.opened_by if source in (
+            "db", "remote") else data['opened_by']
+        self.account = data.account if source in (
+            "db", "remote") else data['account']
+        self.id = data.id if source == "db" else ""
+        self.cycle_id = data.remote_id if source == "db" else data.id if source == "remote" else ""
+        self.is_pending = data.is_pending if source == "db" else False if source == "remote" else data[
+            'is_pending']
+        self.cycle_type = data.cycle_type if source == "db" else data['cycle_type']
+        self.local_api = AHRepo(engine=engine)
         self.mt5 = mt5
-        self.bot=bot
-        self.orders= self.get_orders_from_remote(data.orders['orders']) if source == 'remote' else self.combine_orders() 
-        
-     
+        self.bot = bot
+        self.orders = self.get_orders_from_remote(
+            data.orders['orders']) if source == 'remote' else self.combine_orders()
+
     def combine_orders(self):
-        return self.initial + self.hedge + self.pending +  self.recovery+ self.max_recovery
-    def get_orders_from_remote(self,orders):
+        return self.initial + self.hedge + self.pending + self.recovery + self.max_recovery
+
+    def get_orders_from_remote(self, orders):
         for order_data in orders:
-            # convet orderdata to subscrible 
-            
-            order_obj = order(SimpleNamespace(order_data),self.is_pending,self.mt5,self.local_api,"db")
+            # convet orderdata to subscrible
+
+            order_obj = order(SimpleNamespace(order_data),
+                              self.is_pending, self.mt5, self.local_api, "db")
             order_obj.create_order()
             # add the order to the orders list
-            order_kind= order_obj.kind
+            order_kind = order_obj.kind
             order_ticket = order_obj.ticket
             if order_kind == "initial":
                 self.remove_initial_order(order_ticket)
@@ -54,6 +78,7 @@ class cycle:
             elif order_kind == "pending":
                 self.remove_pending_order(order_ticket)
     # create cycle data
+
     def to_dict(self):
         data = {
             "bot": self.bot_id,
@@ -76,12 +101,14 @@ class cycle:
             "recovery": self.recovery,
             "max_recovery": self.max_recovery,
             "opened_by": self.opened_by,
-            "remote_id": self.cycle_id
-            
+            "remote_id": self.cycle_id,
+            "cycle_type": self.cycle_type,
+
         }
-            
-        return  data
+
+        return data
     # create cycle  data to  send to remote server
+
     def to_remote_dict(self):
         data = {
             "bot": self.bot_id,
@@ -94,67 +121,72 @@ class cycle:
             "zone_index": self.zone_index,
             "status": self.status,
             "symbol": self.symbol,
-            "total_profit": round(float(self.total_profit),2),
-            "total_volume": round(float(self.total_volume),2),
+            "total_profit": round(float(self.total_profit), 2),
+            "total_volume": round(float(self.total_volume), 2),
             "closing_method": self.closing_method,
-            "orders":{
-                "orders":[]},
+            "orders": {
+                "orders": []},
             "opened_by": self.opened_by,
-            
-            
+
+
         }
         #  go through the orders and add them to the data
         for order_ticket in self.orders:
             order_data = self.local_api.get_order_by_ticket(order_ticket)
-            order_obj = order(order_data, order_data.is_pending, self.mt5, self.local_api,"db")
+            order_obj = order(order_data, order_data.is_pending,
+                              self.mt5, self.local_api, "db")
             data["orders"]["orders"].append(order_obj.to_dict())
-        
+
         for order_ticket in self.closed:
             order_data = self.local_api.get_order_by_ticket(order_ticket)
-            order_obj = order(order_data, order_data.is_pending, self.mt5, self.local_api,"db")
+            order_obj = order(order_data, order_data.is_pending,
+                              self.mt5, self.local_api, "db")
             data["orders"]["orders"].append(order_obj.to_dict())
         return data
-    #add  initial order
+    # add  initial order
+
     def add_initial_order(self, order_ticket):
-        
+
         self.initial.append(order_ticket)
         self.status = "initial"
     # add hedge order
+
     def add_hedge_order(self, order_ticket):
         self.hedge.append(order_ticket)
         self.status = "hedge"
     # add recovery order
+
     def add_recovery_order(self, order_ticket):
         self.recovery.append(order_ticket)
         self.status = "recovery"
     # add pending order
+
     def add_pending_order(self, order_ticket):
         self.pending.append(order_ticket)
         self.status = "pending"
-    
-    # remove pending order from pending 
+
+    # remove pending order from pending
     def remove_pending_order(self, order_ticket):
         if order_ticket in self.pending:
             self.pending.remove(order_ticket)
-      
+
     # remove initial order from initial list
     def remove_initial_order(self, order_ticket):
         if order_ticket in self.initial:
             self.initial.remove(order_ticket)
-      
+
     # remove hedge order from hedge list
     def remove_hedge_order(self, order_ticket):
         if order_ticket in self.hedge:
             self.hedge.remove(order_ticket)
-        
+
     # remove recovery order from recovery list
     def remove_recovery_order(self, order_ticket):
         if order_ticket in self.recovery:
             self.recovery.remove(order_ticket)
-        
-            
+
     # update cylce orders
-    def update_cycle(self,remote_api):
+    def update_cycle(self, remote_api):
         self.total_profit = 0
         self.total_volume = 0
         for order_ticket in self.orders:
@@ -164,8 +196,8 @@ class cycle:
                 self.total_volume += order_data.volume
                 # check if order is already closed
                 if order_data.is_closed:
-                    
-                    order_kind= order_data.kind
+
+                    order_kind = order_data.kind
                     if order_kind == "initial":
                         self.remove_initial_order(order_ticket)
                     elif order_kind == "hedge":
@@ -174,156 +206,171 @@ class cycle:
                         self.remove_recovery_order(order_ticket)
                     elif order_kind == "pending":
                         self.remove_pending_order(order_ticket)
-                    if  order_ticket not in self.closed:
+                    if order_ticket not in self.closed:
                         self.closed.append(order_ticket)
                 if order_data.is_pending is False and order_ticket in self.pending:
                     self.remove_pending_order(order_ticket)
-                    self.add_initial_order(order_ticket)    
+                    self.add_initial_order(order_ticket)
                     self.is_pending = False
                     self.status = "initial"
-        if len(self.pending)==0 and self.is_pending is True:
+        if len(self.pending) == 0 and self.is_pending is True:
             self.is_pending = False
             self.status = "initial"
-        if len(self.pending)==1 and len(self.initial)==1:
-            # close the pending order anc open it as market order
-            order_data = self.local_api.get_order_by_ticket(self.pending[0])
-            order_obj = order(order_data, order_data.is_pending, self.mt5, self.local_api,"db")
-            order_obj.close_order()
-            if order_obj.is_closed ==True:
-                self.pending.remove(self.pending[0])
-                if order_obj.type == 2 or order_obj.type == 4:
-                    # open buy order
-                    new_order=self.mt5.buy(self.symbol, order_obj.volume, self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "initial")
-                    self.add_initial_order(new_order[0].ticket)
-                    new_order_obj = order( new_order[0], False, self.mt5, self.local_api,"mt5")
-                    new_order_obj.create_order()
-                    
-                elif order_obj.type == 3 or order_obj.type == 5:
-                    # open sell order
-                    new_order=self.mt5.sell(self.symbol, order_obj.volume, self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "initial")
-                    self.add_initial_order(new_order[0].ticket)
-                    new_order_obj = order( new_order[0], False, self.mt5, self.local_api,"mt5")
-                    new_order_obj.create_order()
-        if  len(self.orders)==0:
+        if len(self.pending) == 0 and len(self.initial) == 1 and self.status == "initial" and self.cycle_type == "BUY&SELL" and len(self.orders) == 1 and len(self.closed) == 0:
+            # # close the pending order anc open it as market order
+            order_data = self.local_api.get_order_by_ticket(self.initial[0])
+            order_obj = order(order_data, order_data.is_pending,
+                              self.mt5, self.local_api, "db")
+            new_order = self.mt5.sell(
+                self.symbol, order_obj.volume, self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "initial")
+            self.add_initial_order(new_order[0].ticket)
+            new_order_obj = order(
+                new_order[0], False, self.mt5, self.local_api, "mt5")
+            new_order_obj.create_order()
+  
+        if len(self.orders) == 0:
             self.status = "closed"
             self.is_closed = True
             self.closing_method["sent_by_admin"] = False
             self.closing_method["user_id"] = 0
             self.closing_method["username"] = "MetaTrader5"
-            remote_api.update_AH_cycle_by_id(self.cycle_id, self.to_remote_dict())
+            remote_api.update_AH_cycle_by_id(
+                self.cycle_id, self.to_remote_dict())
         self.local_api.Update_cycle(self.id, self.to_dict())
     # create a new cycle
+
     def create_cycle(self):
         cycle_data = self.local_api.create_cycle(self.to_dict())
         return cycle_data
     # close cycle
+
     def close_cycle(self, sent_by_admin, user_id, username):
-     
-   
+
         # if cycle is not closed, close it and return True
         for order_id in self.orders:
             order_data = self.local_api.get_order_by_ticket(order_id)
             if order_data:
-                orderobj = order( order_data,self.is_pending,self.mt5, self.local_api)
+                orderobj = order(order_data, self.is_pending,
+                                 self.mt5, self.local_api)
                 orderobj.close_order()
-                
+
         self.is_closed = True
         self.status = "closed"
         self.closing_method["sent_by_admin"] = sent_by_admin
         self.closing_method["user_id"] = user_id
         self.closing_method["username"] = username
         self.local_api.Update_cycle(self.id, self.to_dict())
-        
+
         return True
 
-    
     def manage_cycle_orders(self):
         if self.status == "initial":
-            ask=self.mt5.get_ask(self.symbol)
+            ask = self.mt5.get_ask(self.symbol)
             bid = self.mt5.get_bid(self.symbol)
             if ask > self.upper_bound:
                 self.close_initial_buy_orders()
                 total_sell = self.count_initial_sell_orders()
                 if total_sell >= 1:
                     self.hedge_sell_order()
-                    self.status="recovery"
+                    self.status = "recovery"
                     self.update_AH_cycle()
-            elif bid< self.lower_bound:
+            elif bid < self.lower_bound:
                 self.close_initial_sell_orders()
                 total_buy = self.count_initial_buy_orders()
                 if total_buy >= 1:
                     self.hedge_buy_order()
-                    self.status="recovery"
+                    self.status = "recovery"
                     self.update_AH_cycle()
         elif self.status in ["recovery", "max_recovery"]:
             if not self.bot.disable_new_cycle_recovery:
                 self.go_opposite_direction()
             self.go_hedge_direction()
-    
+
         # self.max_recovery_order()
     def max_recovery_order(self):
         bid = self.mt5.get_bid(self.symbol)
         ask = self.mt5.get_ask(self.symbol)
         pip = self.mt5.get_pips(self.symbol)
-        if(len)(self.hedge)==0 :
+        if (len)(self.hedge) == 0:
             return
         last_hedge = self.hedge[-1]
-        last_hedge_order_data_db = self.local_api.get_order_by_ticket(last_hedge)
-        last_hedge_orderobj = order(last_hedge_order_data_db[0],self.is_pending, self.mt5, self.local_api)
-        if last_hedge_orderobj.type == Mt5.ORDER_TYPE_SELL and bid<last_hedge_orderobj.open_price :
-            if last_hedge_orderobj.profit >0:
-                if len(self.max_recovery)< self.bot.max_recovery:
-                    last_max_recovery =  self.max_recovery[-1] if len(self.max_recovery)>0 else -1
+        last_hedge_order_data_db = self.local_api.get_order_by_ticket(
+            last_hedge)
+        last_hedge_orderobj = order(
+            last_hedge_order_data_db[0], self.is_pending, self.mt5, self.local_api)
+        if last_hedge_orderobj.type == Mt5.ORDER_TYPE_SELL and bid < last_hedge_orderobj.open_price:
+            if last_hedge_orderobj.profit > 0:
+                if len(self.max_recovery) < self.bot.max_recovery:
+                    last_max_recovery = self.max_recovery[-1] if len(
+                        self.max_recovery) > 0 else -1
                     if last_max_recovery > 0:
-                        last_max_recovery_order_data_db = self.local_api.get_order_by_ticket(last_max_recovery)
-                        last_max_recovery_orderobj = order(last_max_recovery_order_data_db[0],self.is_pending, self.mt5, self.local_api)
-                        last_max_recovery_open_price=last_max_recovery_orderobj.open_price
-                        if(ask < last_max_recovery_open_price-self.bot.zone_forward*pip*10 and last_hedge_orderobj.type == Mt5.ORDER_TYPE_SELL and last_max_recovery_open_price > last_hedge_orderobj.open_price) or( ask < last_max_recovery_open_price-self.bot.zone_forward*pip*10 and last_hedge_orderobj.type == Mt5.ORDER_TYPE_SELL and last_max_recovery_open_price < last_hedge_orderobj.open_price):
-                            max_recovery_order= self.mt5.buy(self.symbol,self.bot.lot_sizes[0],self.bot.bot.magic,0,0,"PIPS",self.bot.slippage,"max_recovery") if self.bot.max_recovery_direction== "opposite" else self.mt5.sell(self.symbol,self.bot.lot_sizes[0],self.bot.bot.magic,0,0,"PIPS",self.bot.slippage,"max_recovery")
-                            self.max_recovery.append(max_recovery_order[0].ticket)
+                        last_max_recovery_order_data_db = self.local_api.get_order_by_ticket(
+                            last_max_recovery)
+                        last_max_recovery_orderobj = order(
+                            last_max_recovery_order_data_db[0], self.is_pending, self.mt5, self.local_api)
+                        last_max_recovery_open_price = last_max_recovery_orderobj.open_price
+                        if (ask < last_max_recovery_open_price-self.bot.zone_forward*pip*10 and last_hedge_orderobj.type == Mt5.ORDER_TYPE_SELL and last_max_recovery_open_price > last_hedge_orderobj.open_price) or (ask < last_max_recovery_open_price-self.bot.zone_forward*pip*10 and last_hedge_orderobj.type == Mt5.ORDER_TYPE_SELL and last_max_recovery_open_price < last_hedge_orderobj.open_price):
+                            max_recovery_order = self.mt5.buy(self.symbol, self.bot.lot_sizes[0], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "max_recovery") if self.bot.max_recovery_direction == "opposite" else self.mt5.sell(
+                                self.symbol, self.bot.lot_sizes[0], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "max_recovery")
+                            self.max_recovery.append(
+                                max_recovery_order[0].ticket)
                             # create a new order
-                            order_obj=order(max_recovery_order[0], False,self.mt5,self.local_api,"mt5")
+                            order_obj = order(
+                                max_recovery_order[0], False, self.mt5, self.local_api, "mt5")
                             order_obj.create_order()
                             return True
                     else:
-                        if ask >last_hedge_orderobj.open_price-self.bot.zone_forward*pip*10 and len(self.max_recovery)==0:
-                            max_recovery_order= self.mt5.buy(self.symbol,self.bot.lot_sizes[0],self.bot.bot.magic,0,0,"PIPS",self.bot.slippage,"max_recovery") if self.bot.max_recovery_direction== "opposite" else self.mt5.sell(self.symbol,self.bot.lot_sizes[0],self.bot.bot.magic,0,0,"PIPS",self.bot.slippage,"max_recovery")
-                            self.max_recovery.append(max_recovery_order[0].ticket)
+                        if ask > last_hedge_orderobj.open_price-self.bot.zone_forward*pip*10 and len(self.max_recovery) == 0:
+                            max_recovery_order = self.mt5.buy(self.symbol, self.bot.lot_sizes[0], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "max_recovery") if self.bot.max_recovery_direction == "opposite" else self.mt5.sell(
+                                self.symbol, self.bot.lot_sizes[0], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "max_recovery")
+                            self.max_recovery.append(
+                                max_recovery_order[0].ticket)
                             # create a new order
-                            order_obj=order(max_recovery_order[0], False,self.mt5,self.local_api,"mt5")
+                            order_obj = order(
+                                max_recovery_order[0], False, self.mt5, self.local_api, "mt5")
                             order_obj.create_order()
                             return True
-        elif last_hedge_orderobj.type == Mt5.ORDER_TYPE_BUY and ask>last_hedge_orderobj.open_price:
-            if last_hedge_orderobj.profit >0:
-                if len(self.max_recovery)< self.bot.max_recovery:
-                    last_max_recovery =  self.max_recovery[-1] if len(self.max_recovery)>0 else -1
+        elif last_hedge_orderobj.type == Mt5.ORDER_TYPE_BUY and ask > last_hedge_orderobj.open_price:
+            if last_hedge_orderobj.profit > 0:
+                if len(self.max_recovery) < self.bot.max_recovery:
+                    last_max_recovery = self.max_recovery[-1] if len(
+                        self.max_recovery) > 0 else -1
                     if last_max_recovery > 0:
-                        last_max_recovery_order_data_db = self.local_api.get_order_by_ticket(last_max_recovery)
-                        last_max_recovery_orderobj = order(last_max_recovery_order_data_db[0],self.is_pending, self.mt5, self.local_api)
-                        last_max_recovery_open_price=last_max_recovery_orderobj.open_price
-                        if(bid > last_max_recovery_open_price+self.bot.zone_forward*pip*10 and last_hedge_orderobj.type == Mt5.ORDER_TYPE_BUY and last_max_recovery_open_price < last_hedge_orderobj.open_price) or(bid > last_max_recovery_open_price+self.bot.zone_forward*pip*10 and last_max_recovery_orderobj.type == Mt5.ORDER_TYPE_BUY and last_max_recovery_open_price > last_hedge_orderobj.open_price):
-                            max_recovery_order= self.mt5.sell(self.symbol,self.bot.lot_sizes[0],self.bot.bot.magic,0,0,"PIPS",self.bot.slippage,"max_recovery") if self.bot.max_recovery_direction== "opposite" else self.mt5.buy(self.symbol,self.bot.lot_sizes[0],self.bot.bot.magic,0,0,"PIPS",self.bot.slippage,"max_recovery")
-                            self.max_recovery.append(max_recovery_order[0].ticket)
+                        last_max_recovery_order_data_db = self.local_api.get_order_by_ticket(
+                            last_max_recovery)
+                        last_max_recovery_orderobj = order(
+                            last_max_recovery_order_data_db[0], self.is_pending, self.mt5, self.local_api)
+                        last_max_recovery_open_price = last_max_recovery_orderobj.open_price
+                        if (bid > last_max_recovery_open_price+self.bot.zone_forward*pip*10 and last_hedge_orderobj.type == Mt5.ORDER_TYPE_BUY and last_max_recovery_open_price < last_hedge_orderobj.open_price) or (bid > last_max_recovery_open_price+self.bot.zone_forward*pip*10 and last_max_recovery_orderobj.type == Mt5.ORDER_TYPE_BUY and last_max_recovery_open_price > last_hedge_orderobj.open_price):
+                            max_recovery_order = self.mt5.sell(self.symbol, self.bot.lot_sizes[0], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "max_recovery") if self.bot.max_recovery_direction == "opposite" else self.mt5.buy(
+                                self.symbol, self.bot.lot_sizes[0], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "max_recovery")
+                            self.max_recovery.append(
+                                max_recovery_order[0].ticket)
                             # create a new order
-                            order_obj=order(max_recovery_order[0], False,self.mt5,self.local_api,"mt5")
+                            order_obj = order(
+                                max_recovery_order[0], False, self.mt5, self.local_api, "mt5")
                             order_obj.create_order()
                             return True
                     else:
-                        if bid < last_hedge_orderobj.open_price+self.bot.zone_forward*pip*10 and len(self.max_recovery)==0:
-                            max_recovery_order= self.mt5.sell(self.symbol,self.bot.lot_sizes[0],self.bot.bot.magic,0,0,"PIPS",self.bot.slippage,"max_recovery") if self.bot.max_recovery_direction== "opposite" else self.mt5.buy(self.symbol,self.bot.lot_sizes[0],self.bot.bot.magic,0,0,"PIPS",self.bot.slippage,"max_recovery")
-                            self.max_recovery.append(max_recovery_order[0].ticket)
+                        if bid < last_hedge_orderobj.open_price+self.bot.zone_forward*pip*10 and len(self.max_recovery) == 0:
+                            max_recovery_order = self.mt5.sell(self.symbol, self.bot.lot_sizes[0], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "max_recovery") if self.bot.max_recovery_direction == "opposite" else self.mt5.buy(
+                                self.symbol, self.bot.lot_sizes[0], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "max_recovery")
+                            self.max_recovery.append(
+                                max_recovery_order[0].ticket)
                             # create a new order
-                            order_obj=order(max_recovery_order[0], False,self.mt5,self.local_api,"mt5")
+                            order_obj = order(
+                                max_recovery_order[0], False, self.mt5, self.local_api, "mt5")
                             order_obj.create_order()
                             return True
-            
+
     def close_initial_buy_orders(self):
         total_initial = len(self.initial)
-        if total_initial > 1:
+        if total_initial >= 1:
             for i in range(total_initial):
                 ticket = self.initial[i]
-                order_data_db=  self.local_api.get_order_by_ticket(ticket)
-                orderobj= order(order_data_db,self.is_pending,self.mt5,self.local_api)
+                order_data_db = self.local_api.get_order_by_ticket(ticket)
+                orderobj = order(order_data_db, self.is_pending,
+                                 self.mt5, self.local_api)
                 if orderobj.type == Mt5.ORDER_TYPE_BUY:
                     orderobj.close_order()
                     self.initial.pop(i)
@@ -332,11 +379,12 @@ class cycle:
 
     def close_initial_sell_orders(self):
         total_sells = len(self.initial)
-        if total_sells > 1:
+        if total_sells >= 1:
             for i in range(total_sells):
                 ticket = self.initial[i]
-                order_data_db=  self.local_api.get_order_by_ticket(ticket)
-                orderobj= order( order_data_db,self.is_pending,self.mt5,self.local_api)
+                order_data_db = self.local_api.get_order_by_ticket(ticket)
+                orderobj = order(order_data_db, self.is_pending,
+                                 self.mt5, self.local_api)
                 if orderobj.type == Mt5.ORDER_TYPE_SELL:
                     orderobj.close_order()
                     self.initial.pop(i)
@@ -347,7 +395,8 @@ class cycle:
         total_sell = 0
         for ticket in self.initial:
             order_data_db = self.local_api.get_order_by_ticket(ticket)
-            orderobj = order( order_data_db, self.is_pending, self.mt5,self.local_api)
+            orderobj = order(order_data_db, self.is_pending,
+                             self.mt5, self.local_api)
             if orderobj.type == Mt5.ORDER_TYPE_SELL:
                 total_sell += 1
         return total_sell
@@ -356,126 +405,153 @@ class cycle:
         total_buy = 0
         for ticket in self.initial:
             order_data_db = self.local_api.get_order_by_ticket(ticket)
-            orderobj = order( order_data_db, self.is_pending, self.mt5,self.local_api)
+            orderobj = order(order_data_db, self.is_pending,
+                             self.mt5, self.local_api)
             if orderobj.type == Mt5.ORDER_TYPE_BUY:
                 total_buy += 1
         return total_buy
-                
- 
+
     def hedge_buy_order(self):
         self.lot_idx = min(self.lot_idx + 1, len(self.bot.lot_sizes) - 1)
-        hedge_order=self.mt5.sell(self.symbol,self.bot.lot_sizes[self.lot_idx],self.bot.bot.magic,0,0,"PIPS",self.bot.slippage,"hedge")
-        self.zone_index  = min(self.zone_index + 1, len(self.bot.zones) - 1)
-        if len(hedge_order)>0:
+        hedge_order = self.mt5.sell(
+            self.symbol, self.bot.lot_sizes[self.lot_idx], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "hedge")
+        self.zone_index = min(self.zone_index + 1, len(self.bot.zones) - 1)
+        if len(hedge_order) > 0:
             # add the order to the hedge list
             self.hedge.append(hedge_order[0].ticket)
             # create a new order
-            order_obj= order( hedge_order[0], False,self.mt5,self.local_api,"mt5")
+            order_obj = order(
+                hedge_order[0], False, self.mt5, self.local_api, "mt5")
             order_obj.create_order()
-            
-            
+
         if self.bot.enable_recovery:
-            recovery_order = self.mt5.buy(self.symbol,self.bot.lot_sizes[0],self.bot.bot.magic,0,0,"PIPS",self.bot.slippage,"recovery")
-            if  len(recovery_order)>0:
+            recovery_order = self.mt5.buy(
+                self.symbol, self.bot.lot_sizes[0], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "recovery")
+            if len(recovery_order) > 0:
                 self.recovery.append(recovery_order[0].ticket)
                 # create a new order
-                order_obj=order( recovery_order[0], False,self.mt5,self.local_api,"mt5")
+                order_obj = order(
+                    recovery_order[0], False, self.mt5, self.local_api, "mt5")
                 order_obj.create_order()
-        #update the upper and lower by the zone index
-        self.lower_bound = float(hedge_order[0].price_open) - float(self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
-        self.upper_bound = float(hedge_order[0].price_open) + float(self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
+        # update the upper and lower by the zone index
+        self.lower_bound = float(hedge_order[0].price_open) - float(
+            self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
+        self.upper_bound = float(hedge_order[0].price_open) + float(
+            self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
+
     def hedge_sell_order(self):
-        self.lot_idx =  min(self.lot_idx + 1, len(self.bot.lot_sizes) - 1)  
-        hedge_order=self.mt5.buy(self.symbol,self.bot.lot_sizes[self.lot_idx],self.bot.bot.magic,0,0,"PIPS",self.bot.slippage,"hedge")
-        self.zone_index  = min(self.zone_index + 1, len(self.bot.zones) - 1)
-        if len(hedge_order)>0:
+        self.lot_idx = min(self.lot_idx + 1, len(self.bot.lot_sizes) - 1)
+        hedge_order = self.mt5.buy(
+            self.symbol, self.bot.lot_sizes[self.lot_idx], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "hedge")
+        self.zone_index = min(self.zone_index + 1, len(self.bot.zones) - 1)
+        if len(hedge_order) > 0:
             # add the order to the hedge list
             self.hedge.append(hedge_order[0].ticket)
             # create a new order
-            order_obj= order( hedge_order[0], False,self.mt5,self.local_api,"mt5")
+            order_obj = order(
+                hedge_order[0], False, self.mt5, self.local_api, "mt5")
             order_obj.create_order()
         if self.bot.enable_recovery:
-            recovery_order = self.mt5.sell(self.symbol,self.bot.lot_sizes[0],self.bot.bot.magic,0,0,"PIPS",self.bot.slippage,"recovery")
-            if len(recovery_order)>0:
+            recovery_order = self.mt5.sell(
+                self.symbol, self.bot.lot_sizes[0], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "recovery")
+            if len(recovery_order) > 0:
                 self.recovery.append(recovery_order[0].ticket)
                 # create a new order
-                order_obj=order(recovery_order[0], False, self.mt5,self.local_api,"mt5")
+                order_obj = order(
+                    recovery_order[0], False, self.mt5, self.local_api, "mt5")
                 order_obj.create_order()
-        #update the upper and lower by the zone index
-        self.lower_bound = float(hedge_order[0].price_open) - float(self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
-        self.upper_bound = float(hedge_order[0].price_open) + float(self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
+        # update the upper and lower by the zone index
+        self.lower_bound = float(hedge_order[0].price_open) - float(
+            self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
+        self.upper_bound = float(hedge_order[0].price_open) + float(
+            self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
+
     def go_opposite_direction(self):
         # check recovery order length
-        if len(self.recovery)<1:
+        if len(self.recovery) < 1:
             return
         if len(self.recovery) > 0:
-            ask=    self.mt5.get_ask(self.symbol)
+            ask = self.mt5.get_ask(self.symbol)
             bid = self.mt5.get_bid(self.symbol)
             if ask > self.upper_bound:
-                last_recovery= self.recovery[-1]
-                order_data_db=  self.local_api.get_order_by_ticket(last_recovery)
-                orderobj= order(  order_data_db,self.is_pending,self.mt5,self.local_api,"db")
+                last_recovery = self.recovery[-1]
+                order_data_db = self.local_api.get_order_by_ticket(
+                    last_recovery)
+                orderobj = order(order_data_db, self.is_pending,
+                                 self.mt5, self.local_api, "db")
                 last_recovery_type = orderobj.type
                 last_recovery_profit = orderobj.profit
-                if  last_recovery_type==Mt5.ORDER_TYPE_SELL and last_recovery_profit < 0:
+                if last_recovery_type == Mt5.ORDER_TYPE_SELL and last_recovery_profit < 0:
                     # create  a new  cycle
-                    new_cycle=self.create_new_cycle(orderobj.open_price,last_recovery)
+                    new_cycle = self.create_new_cycle(
+                        orderobj.open_price, last_recovery)
                     new_cycle.hedge_sell_order()
                     self.remove_recovery_order(last_recovery)
             elif bid < self.lower_bound:
-                last_recovery= self.recovery[-1]
-                order_data_db=  self.local_api.get_order_by_ticket(last_recovery)
-                orderobj= order(  order_data_db,self.is_pending,self.mt5,self.local_api,"db")
+                last_recovery = self.recovery[-1]
+                order_data_db = self.local_api.get_order_by_ticket(
+                    last_recovery)
+                orderobj = order(order_data_db, self.is_pending,
+                                 self.mt5, self.local_api, "db")
                 last_recovery_type = orderobj.type
                 last_recovery_profit = orderobj.profit
-                if  last_recovery_type==Mt5.ORDER_TYPE_BUY and last_recovery_profit < 0:
+                if last_recovery_type == Mt5.ORDER_TYPE_BUY and last_recovery_profit < 0:
                     # create  a new  cycle
-                    new_cycle=self.create_new_cycle(orderobj.open_price,last_recovery)
+                    new_cycle = self.create_new_cycle(
+                        orderobj.open_price, last_recovery)
                     new_cycle.hedge_buy_order()
                     self.remove_recovery_order(last_recovery)
+
     def close_recovery_orders(self):
         for ticket in self.recovery:
-            order_data_db=  self.local_api.get_order_by_ticket(ticket)
-            orderobj= order(  order_data_db,self.is_pending,self.mt5,self.local_api,"db")
+            order_data_db = self.local_api.get_order_by_ticket(ticket)
+            orderobj = order(order_data_db, self.is_pending,
+                             self.mt5, self.local_api, "db")
             orderobj.close_order()
             orderobj.is_closed = True
             orderobj.update_order()
             self.recovery.remove(ticket)
             self.closed.append(ticket)
+
     def go_hedge_direction(self):
         if len(self.hedge) > 0:
-            ask=    self.mt5.get_ask(self.symbol)
+            ask = self.mt5.get_ask(self.symbol)
             bid = self.mt5.get_bid(self.symbol)
             if ask > self.upper_bound:
-                last_hedge= self.hedge[-1]
-                order_data_db=  self.local_api.get_order_by_ticket(last_hedge)
-                orderobj= order(  order_data_db,self.is_pending,self.mt5,self.local_api,"db")
+                last_hedge = self.hedge[-1]
+                order_data_db = self.local_api.get_order_by_ticket(last_hedge)
+                orderobj = order(order_data_db, self.is_pending,
+                                 self.mt5, self.local_api, "db")
                 last_hedge_type = orderobj.type
                 last_hedge_profit = orderobj.profit
-                if  last_hedge_type==Mt5.ORDER_TYPE_SELL and last_hedge_profit < 0:
+                if last_hedge_type == Mt5.ORDER_TYPE_SELL and last_hedge_profit < 0:
                     self.close_recovery_orders()
                     self.hedge_sell_order()
             elif bid < self.lower_bound:
-                last_hedge= self.hedge[-1]
-                order_data_db=  self.local_api.get_order_by_ticket(last_hedge)
-                orderobj= order(  order_data_db,self.is_pending,self.mt5,self.local_api,"db")
+                last_hedge = self.hedge[-1]
+                order_data_db = self.local_api.get_order_by_ticket(last_hedge)
+                orderobj = order(order_data_db, self.is_pending,
+                                 self.mt5, self.local_api, "db")
                 last_hedge_type = orderobj.type
                 last_hedge_profit = orderobj.profit
-                if  last_hedge_type==Mt5.ORDER_TYPE_BUY and last_hedge_profit < 0:
+                if last_hedge_type == Mt5.ORDER_TYPE_BUY and last_hedge_profit < 0:
                     self.close_recovery_orders()
                     self.hedge_buy_order()
-                    
+
     def update_AH_cycle(self):
         self.local_api.Update_cycle(self.id, self.to_dict())
     #  close   cycle when hits  takeprofit
-    def close_cycle_on_takeprofit(self,take_profit,remote_api):
+
+    def close_cycle_on_takeprofit(self, take_profit, remote_api):
         if self.total_profit >= take_profit:
             self.is_pending = False
             self.is_closed = True
             self.close_cycle(False, 0, "MetaTrader5")
             self.update_AH_cycle()
-            remote_api.update_AH_cycle_by_id(self.cycle_id, self.to_remote_dict())
-    def create_new_cycle(self,price_open,recovery_order):
+            remote_api.update_AH_cycle_by_id(
+                self.cycle_id, self.to_remote_dict())
+
+    def create_new_cycle(self, price_open, recovery_order):
         """
         This function creates a cycle.
 
@@ -485,9 +561,11 @@ class cycle:
         Returns:
         None
         """
-        lower_bound = float(price_open) - float(self.bot.zones[0]) * float(self.mt5.get_pips(self.symbol))
-        upper_bound = float(price_open) + float(self.bot.zones[0]) * float(self.mt5.get_pips(self.symbol))
-       
+        lower_bound = float(
+            price_open) - float(self.bot.zones[0]) * float(self.mt5.get_pips(self.symbol))
+        upper_bound = float(
+            price_open) + float(self.bot.zones[0]) * float(self.mt5.get_pips(self.symbol))
+
         data = {
             "account": self.account,
             "bot": self.bot_id,
@@ -495,10 +573,10 @@ class cycle:
             "symbol":  self.symbol,
             "closing_method": {},
             "opened_by": {
-            "sent_by_admin": False,
-            "status": "Opened by MetaTrader5",
-            "user_id": 0,
-            "user_name": "MetaTrader5",
+                "sent_by_admin": False,
+                "status": "Opened by MetaTrader5",
+                "user_id": 0,
+                "user_name": "MetaTrader5",
             },
             "lot_idx": 0,
             "status": "initial",
@@ -514,14 +592,13 @@ class cycle:
             "closed": [],
             "recovery": [],
             "max_recovery": [],
-            "cycle_id" :"",
-            "zone_index"   : 0,
-            
-            
+            "cycle_id": "",
+            "zone_index": 0,
+
+
         }
-        New_cycle = cycle(data, self.local_api,self.mt5,self)
-        res=self.bot.create_AH_cycle(New_cycle.to_remote_dict())
-        New_cycle.cycle_id =  str( res.id)
+        New_cycle = cycle(data, self.local_api, self.mt5, self)
+        res = self.bot.create_AH_cycle(New_cycle.to_remote_dict())
+        New_cycle.cycle_id = str(res.id)
         New_cycle.create_cycle()
         return New_cycle
-       

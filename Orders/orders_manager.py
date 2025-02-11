@@ -21,7 +21,7 @@ class orders_manager:
     def get_all_mt5_orders(self):
         orders = self.mt5.get_all_orders()
         positions = self.mt5.get_all_positions()
-
+        self.all_mt5_orders = []
         if orders:
             for pos in orders:
                 self.all_mt5_orders.append(pos.ticket)

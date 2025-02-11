@@ -1,6 +1,6 @@
 
 from sqlmodel import Field, SQLModel, Relationship
-from typing import TYPE_CHECKING ,Dict,List
+from typing import TYPE_CHECKING, Dict, List
 if TYPE_CHECKING:
     from .ct_cycles_orders import CtCyclesOrders
 from sqlmodel import Column, JSON
@@ -26,13 +26,14 @@ class CTCycle(SQLModel, table=True):
     account: str
     symbol: str
     threshold_lower: float
-    threshold_upper: float    
+    threshold_upper: float
     initial: List[int] = Field(default_factory=list, sa_column=Column(JSON))
     hedge: List[int] = Field(default_factory=list, sa_column=Column(JSON))
     pending: List[int] = Field(default_factory=list, sa_column=Column(JSON))
     closed: List[int] = Field(default_factory=list, sa_column=Column(JSON))
     recovery: List[int] = Field(default_factory=list, sa_column=Column(JSON))
     threshold: List[int] = Field(default_factory=list, sa_column=Column(JSON))
+    cycle_type: str | None
+
     class Config:
-        arbitrary_types_allowed = True 
-        
+        arbitrary_types_allowed = True
