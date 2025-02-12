@@ -205,7 +205,10 @@ class cycle:
                     elif order_kind == "recovery":
                         self.remove_recovery_order(order_ticket)
                     elif order_kind == "pending":
-                        self.remove_pending_order(order_ticket)
+                        if order_ticket in self.pending:
+                            self.remove_pending_order(order_ticket)
+                        if order_ticket  in self.initial:
+                            self.remove_initial_order(order_ticket)
                     if order_ticket not in self.closed:
                         self.closed.append(order_ticket)
                 if order_data.is_pending is False and order_ticket in self.pending:
@@ -222,7 +225,7 @@ class cycle:
             order_obj = order(order_data, order_data.is_pending,
                               self.mt5, self.local_api, "db")
             new_order = self.mt5.sell(
-                self.symbol, order_obj.volume, self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "initial")
+                self.symbol, order_obj.volume, self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "pending")
             self.add_initial_order(new_order[0].ticket)
             new_order_obj = order(
                 new_order[0], False, self.mt5, self.local_api, "mt5")

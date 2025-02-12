@@ -237,7 +237,10 @@ class cycle:
                     elif order_kind == "recovery":
                         self.remove_recovery_order(order_ticket)
                     elif order_kind == "pending":
-                        self.remove_pending_order(order_ticket)
+                        if order_ticket in self.pending:
+                            self.remove_pending_order(order_ticket)
+                        if order_ticket in self.initial:
+                            self.remove_initial_order(order_ticket)
                     elif order_kind == "threshold":
                         self.remove_threshold_order(order_ticket)
                 if order_data.is_pending is False and order_ticket in self.pending:
