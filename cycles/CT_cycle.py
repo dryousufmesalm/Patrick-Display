@@ -395,6 +395,17 @@ class cycle:
                 elif order_data.type == Mt5.ORDER_TYPE_BUY:
                     self.buyLots += order_data.volume
         hedge_lot = self.buyLots-self.sellLots
+
+        if self.bot.enable_recovery:
+            recovery_order = self.mt5.buy(
+                self.symbol, self.bot.lot_sizes[0], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "recovery")
+            if len(recovery_order) > 0:
+                self.recovery.append(recovery_order[0].ticket)
+                # create a new order
+                order_obj = order(
+                    recovery_order[0], False, self.mt5, self.local_api, "mt5")
+                order_obj.create_order()
+
         if hedge_lot <= 0:
             return
         hedge_order = self.mt5.sell(
@@ -412,15 +423,6 @@ class cycle:
             self.upper_bound = float(hedge_order[0].price_open) + float(
                 self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
 
-        if self.bot.enable_recovery:
-            recovery_order = self.mt5.buy(
-                self.symbol, self.bot.lot_sizes[0], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "recovery")
-            if len(recovery_order) > 0:
-                self.recovery.append(recovery_order[0].ticket)
-                # create a new order
-                order_obj = order(
-                    recovery_order[0], False, self.mt5, self.local_api, "mt5")
-                order_obj.create_order()
         # update the upper and lower by the zone index
 
     def threshold_buy_order(self, threshold):
@@ -463,6 +465,17 @@ class cycle:
                     self.buyLots += order_data.volume
 
         hedge_lot = self.sellLots-self.buyLots
+        # recovery order
+        if self.bot.enable_recovery:
+            recovery_order = self.mt5.sell(
+                self.symbol, self.bot.lot_sizes[0], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "recovery")
+            if len(recovery_order) > 0:
+                self.recovery.append(recovery_order[0].ticket)
+                # create a new order
+                order_obj = order(
+                    recovery_order[0], False, self.mt5, self.local_api, "mt5")
+                order_obj.create_order()
+        # hedge order
         if hedge_lot <= 0:
             return
         hedge_order = self.mt5.buy(
@@ -480,16 +493,6 @@ class cycle:
                 self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
             self.upper_bound = float(hedge_order[0].price_open) + float(
                 self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
-
-        if self.bot.enable_recovery:
-            recovery_order = self.mt5.sell(
-                self.symbol, self.bot.lot_sizes[0], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "recovery")
-            if len(recovery_order) > 0:
-                self.recovery.append(recovery_order[0].ticket)
-                # create a new order
-                order_obj = order(
-                    recovery_order[0], False, self.mt5, self.local_api, "mt5")
-                order_obj.create_order()
 
     def go_opposite_direction(self):
         # check recovery order length
