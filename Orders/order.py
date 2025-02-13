@@ -1,4 +1,3 @@
-from cycles.CT_cycle import cycle as CTcycle
 import datetime
 from DB.ah_strategy.repositories.ah_repo import AHRepo
 from DB.ct_strategy.repositories.ct_repo import CTRepo
@@ -122,7 +121,7 @@ class order:
 
         cycle_data = self.ct_repo.get_cycle_by_id(self.cycle_id)
         if cycle_data is not None:
-            cycle_obj = CTcycle(cycle_data, self.Mt5, self, "db")
+            cycle_obj = CT_cycle(cycle_data, self.Mt5, self, "db")
             if cycle_obj is not None:
                 if cycle_obj.is_closed == True:
                     cycle_obj.is_closed = False
