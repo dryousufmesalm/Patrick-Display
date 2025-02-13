@@ -1,8 +1,13 @@
+from cycles.CT_cycle import cycle as CTcycle
 import datetime
+from DB.ah_strategy.repositories.ah_repo import AHRepo
+from DB.ct_strategy.repositories.ct_repo import CTRepo
+
+from DB.db_engine import engine
 
 
 class order:
-    def __init__(self, order_data, is_pending, mt5, local_api, source=None):
+    def __init__(self, order_data, is_pending, mt5, local_api, source=None, cycle_id=""):
         self.comment = order_data.comment
         self.commission = order_data.commission if source == "db" else 0
         self.is_pending = is_pending
@@ -28,6 +33,9 @@ class order:
         self.local_api = local_api
         self.id = getattr(order_data, 'id', "")
         self.account = self.Mt5.account_id
+        self.cycle_id = cycle_id
+        self.ah_repo = AHRepo(engine=engine)
+        self.ct_repo = CTRepo(engine=engine)
 
     def to_dict(self):
         return {
@@ -50,6 +58,7 @@ class order:
             "is_closed": self.is_closed,
             "trailing_steps": self.trailing_steps,
             "account":  self.account,
+            "cycle_id": self.cycle_id,
         }
 
     def update_from_mt5(self):
@@ -61,28 +70,79 @@ class order:
         # get the order information if it exists and update the class attributes accordingly
         # if the order does not exist, print an error message and return False. Otherwise, return True.
         if self.is_pending:
-            order = self.Mt5.get_order_by_ticket(ticket=self.ticket)
+            order_data = self.Mt5.get_order_by_ticket(ticket=self.ticket)
         else:
-            order = self.Mt5.get_position_by_ticket(ticket=self.ticket)
-        if len(order) == 0:
+            order_data = self.Mt5.get_position_by_ticket(ticket=self.ticket)
+        if len(order_data) == 0:
             return False
         if self.is_closed:
             return False
-        order = order[0]
+        order_data = order_data[0]
 
-        self.comment = order.comment
-        self.magic_number = order.magic
-        self.open_price = round(order.price_open, 2)
+        self.comment = order_data.comment
+        self.magic_number = order_data.magic
+        self.open_price = round(order_data.price_open, 2)
         self.open_time = datetime.datetime.fromtimestamp(
-            order.time_setup if self.is_pending else order.time).strftime('%Y-%m-%d %H:%M:%S')
-        self.profit = round(0 if self.is_pending else order.profit, 2)
-        self.swap = round(0 if self.is_pending else order.swap, 2)
-        self.symbol = order.symbol
-        self.ticket = order.ticket
-        self.type = order.type
+            order_data.time_setup if self.is_pending else order_data.time).strftime('%Y-%m-%d %H:%M:%S')
+        self.profit = round(0 if self.is_pending else order_data.profit, 2)
+        self.swap = round(0 if self.is_pending else order_data.swap, 2)
+        self.symbol = order_data.symbol
+        self.ticket = order_data.ticket
+        self.type = order_data.type
         self.volume = round(
-            order.volume_current if self.is_pending else order.volume, 2)
+            order_data.volume_current if self.is_pending else order_data.volume, 2)
 
+        return True
+
+    def check_false_closed_cycles(self):
+        from cycles.AH_cycle import cycle as AH_cycle
+        from cycles.CT_cycle import cycle as CT_cycle
+        cycle_data = self.ah_repo.get_cycle_by_id(self.cycle_id)
+        if cycle_data is not None:
+            cycle_obj = AH_cycle(cycle_data, self.Mt5, self, "db")
+            if cycle_obj is not None:
+                if cycle_obj.is_closed == True:
+                    cycle_obj.is_closed = False
+                    if self.ticket in cycle_obj.closed:
+                        cycle_obj.closed.remove(self.ticket)
+                    cycle_obj.status = "recovery"
+                    cycle_obj.closing_method = {}
+                    for pos in cycle_obj.closed:
+                        # move order to open depend on kind
+                        if (self.kind == "pending"):
+                            cycle_obj.remove_pending_order(pos)
+                        if (self.kind == "initial"):
+                            cycle_obj.remove_initial_order(pos)
+                        if (self.kind == "hedge"):
+                            cycle_obj.remove_hedge_order(pos)
+                        if (self.kind == "recovery"):
+                            cycle_obj.remove_recovery_order(pos)
+                    cycle_obj.update_AH_cycle()
+            return True
+
+        cycle_data = self.ct_repo.get_cycle_by_id(self.cycle_id)
+        if cycle_data is not None:
+            cycle_obj = CTcycle(cycle_data, self.Mt5, self, "db")
+            if cycle_obj is not None:
+                if cycle_obj.is_closed == True:
+                    cycle_obj.is_closed = False
+                    if self.ticket in cycle_obj.closed:
+                        cycle_obj.closed.remove(self.ticket)
+                    cycle_obj.status = "recovery"
+                    cycle_obj.closing_method = {}
+                    for pos in cycle_obj.closed:
+                        # move pos to open depend on kind
+                        if (self.kind == "pending"):
+                            cycle_obj.remove_pending_order(pos)
+                        if (self.kind == "initial"):
+                            cycle_obj.remove_initial_order(pos)
+                        if (self.kind == "hedge"):
+                            cycle_obj.remove_hedge_order(pos)
+                        if (self.kind == "recovery"):
+                            cycle_obj.remove_recovery_order(pos)
+                        if (self.kind == "threshold"):
+                            cycle_obj.remove_threshold_order(pos)
+                    cycle_obj.update_CT_cycle()
         return True
 
     def update_order_configs(self, stoploss, take_profit, trailing):
@@ -97,14 +157,14 @@ class order:
             print(f"Closing pending order with ticket {self.ticket}")
             data = self.to_dict()
             res = self.Mt5.close_order(data, 30)
-            if res is not None:
+            if res.retcode == 10009:
                 self.is_closed = True
 
         else:
             print(f"Closing order with ticket {self.ticket}")
             data = self.to_dict()
             res = self.Mt5.close_position(data, 30)
-            if res is not None:
+            if res.retcode == 10009:
                 self.is_closed = True
 
         # update the order

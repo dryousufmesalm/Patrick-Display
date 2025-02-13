@@ -17,6 +17,7 @@ class orders_manager:
         self.suspious_ah_orders = []
         self.all_ct_orders = []
         self.suspious_ct_orders = []
+        self.false_closed_orders = []
 
     def get_all_mt5_orders(self):
         orders = self.mt5.get_all_orders()
@@ -40,9 +41,11 @@ class orders_manager:
             # if order exists in database, update it
             if db_order:
                 order_obj = order(db_order, db_order.is_pending,
-                                  self.mt5, self.ah_repo, "db")
+                                  self.mt5, self.ah_repo, "db", db_order.cycle_id)
 
                 order_obj.update_from_mt5()
+                order_obj.check_false_closed_cycles()
+
                 order_obj.update_order()
         # go through all db orders and update
         for db_order in self.suspious_ah_orders:
@@ -52,7 +55,7 @@ class orders_manager:
             if is_closed:
                 print("Order is closed")
                 order_obj = order(db_order, db_order.is_pending,
-                                  self.mt5, self.ah_repo, "db")
+                                  self.mt5, self.ah_repo, "db", db_order.cycle_id)
                 order_obj.is_closed = is_closed
                 order_obj.update_order()
             # # if order does not exist in database, create it
@@ -66,13 +69,18 @@ class orders_manager:
         self.all_ah_orders = [
             entry for entry in orders if entry.account == self.mt5.account_id]
         return self.all_ah_orders
-    # function that get all suspicious orders in database
 
     def get_suspicious_ah_orders_in_db(self):
         # get the orders in db orders and not in mt5 orders
         self.suspious_ah_orders = [
             order for order in self.all_ah_orders if order not in self.all_mt5_orders]
         return self.suspious_ah_orders
+
+    def get_false_closed_orders(self):
+        # compare all orders in db with mt5 orders
+        if len(self.all_ah_orders) != len(self.all_mt5_orders):
+            self.false_closed_orders = [
+                order for order in self.all_ah_orders if order not in self.all_mt5_orders]
 
     def update_ct_orders_in_db(self):
         for pos in self.all_mt5_orders:
@@ -81,9 +89,10 @@ class orders_manager:
             # if order exists in database, update it
             if db_order:
                 order_obj = order(db_order, db_order.is_pending,
-                                  self.mt5, self.ct_repo, "db")
+                                  self.mt5, self.ct_repo, "db", db_order.cycle_id)
 
                 order_obj.update_from_mt5()
+                order_obj.check_false_closed_cycles()
                 order_obj.update_order()
         # go through all db orders and update
         for db_order in self.suspious_ct_orders:
@@ -92,7 +101,7 @@ class orders_manager:
             # if order exists in MT5, update it
             if is_closed:
                 order_obj = order(db_order, db_order.is_pending,
-                                  self.mt5, self.ct_repo, "db")
+                                  self.mt5, self.ct_repo, "db", db_order.cycle_id)
                 order_obj.is_closed = is_closed
                 order_obj.update_order()
             # # if order does not exist in database, create it

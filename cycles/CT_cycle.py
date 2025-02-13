@@ -149,13 +149,13 @@ class cycle:
         for order_ticket in self.orders:
             order_data = self.local_api.get_order_by_ticket(order_ticket)
             order_obj = order(order_data, order_data.is_pending,
-                              self.mt5, self.local_api, "db")
+                              self.mt5, self.local_api, "db", self.id)
             data["orders"]["orders"].append(order_obj.to_dict())
 
         for order_ticket in self.closed:
             order_data = self.local_api.get_order_by_ticket(order_ticket)
             order_obj = order(order_data, order_data.is_pending,
-                              self.mt5, self.local_api, "db")
+                              self.mt5, self.local_api, "db", self.id)
             data["orders"]["orders"].append(order_obj.to_dict())
         return data
     # add  initial order
@@ -255,12 +255,12 @@ class cycle:
             # # close the pending order anc open it as market order
             order_data = self.local_api.get_order_by_ticket(self.initial[0])
             order_obj = order(order_data, order_data.is_pending,
-                              self.mt5, self.local_api, "db")
+                              self.mt5, self.local_api, "db", self.id)
             new_order = self.mt5.sell(
                 self.symbol, order_obj.volume, self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "initial")
             self.add_initial_order(new_order[0].ticket)
             new_order_obj = order(
-                new_order[0], False, self.mt5, self.local_api, "mt5")
+                new_order[0], False, self.mt5, self.local_api, "mt5", self.id)
             new_order_obj.create_order()
 
         if len(self.orders) == 0:
@@ -276,6 +276,11 @@ class cycle:
 
     def create_cycle(self):
         cycle_data = self.local_api.create_cycle(self.to_dict())
+        for order_ticket in self.orders:
+            order_data = self.local_api.get_order_by_ticket(order_ticket)
+            order_objec = order(order_data, order_data.is_pending,
+                                self.mt5, self.local_api, "db", self.id)
+            order_objec.update_order()
         return cycle_data
     # close cycle
 
@@ -286,8 +291,9 @@ class cycle:
             order_data = self.local_api.get_order_by_ticket(order_id)
             if order_data:
                 orderobj = order(order_data, self.is_pending,
-                                 self.mt5, self.local_api)
-                orderobj.close_order()
+                                 self.mt5, self.local_api, "db", self.id)
+                if orderobj.close_order() is False:
+                    return False
 
         self.is_closed = True
         self.status = "closed"
@@ -342,7 +348,7 @@ class cycle:
                 ticket = self.initial[i]
                 order_data_db = self.local_api.get_order_by_ticket(ticket)
                 orderobj = order(order_data_db, self.is_pending,
-                                 self.mt5, self.local_api)
+                                 self.mt5, self.local_api, "db", self.id)
                 if orderobj.type == Mt5.ORDER_TYPE_BUY:
                     orderobj.close_order()
                     self.initial.pop(i)
@@ -356,7 +362,7 @@ class cycle:
                 ticket = self.initial[i]
                 order_data_db = self.local_api.get_order_by_ticket(ticket)
                 orderobj = order(order_data_db, self.is_pending,
-                                 self.mt5, self.local_api)
+                                 self.mt5, self.local_api, "db", self.id)
                 if orderobj.type == Mt5.ORDER_TYPE_SELL:
                     orderobj.close_order()
                     self.initial.pop(i)
@@ -368,7 +374,7 @@ class cycle:
         for ticket in self.initial:
             order_data_db = self.local_api.get_order_by_ticket(ticket)
             orderobj = order(order_data_db, self.is_pending,
-                             self.mt5, self.local_api)
+                             self.mt5, self.local_api, "db", self.id)
             if orderobj.type == Mt5.ORDER_TYPE_SELL:
                 total_sell += 1
         return total_sell
@@ -378,7 +384,7 @@ class cycle:
         for ticket in self.initial:
             order_data_db = self.local_api.get_order_by_ticket(ticket)
             orderobj = order(order_data_db, self.is_pending,
-                             self.mt5, self.local_api)
+                             self.mt5, self.local_api, "db", self.id)
             if orderobj.type == Mt5.ORDER_TYPE_BUY:
                 total_buy += 1
         return total_buy
@@ -403,7 +409,7 @@ class cycle:
                 self.recovery.append(recovery_order[0].ticket)
                 # create a new order
                 order_obj = order(
-                    recovery_order[0], False, self.mt5, self.local_api, "mt5")
+                    recovery_order[0], False, self.mt5, self.local_api, "mt5", self.id)
                 order_obj.create_order()
 
         if hedge_lot <= 0:
@@ -416,7 +422,7 @@ class cycle:
             self.hedge.append(hedge_order[0].ticket)
             # create a new order
             order_obj = order(
-                hedge_order[0], False, self.mt5, self.local_api, "mt5")
+                hedge_order[0], False, self.mt5, self.local_api, "mt5", self.id)
             order_obj.create_order()
             self.lower_bound = float(hedge_order[0].price_open) - float(
                 self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
@@ -435,7 +441,7 @@ class cycle:
             self.threshold.append(threshold_order[0].ticket)
             # create a new order
             order_obj = order(
-                threshold_order[0], False, self.mt5, self.local_api, "mt5")
+                threshold_order[0], False, self.mt5, self.local_api, "mt5", self.id)
             order_obj.create_order()
 
     def threshold_sell_order(self, threshold):
@@ -448,7 +454,7 @@ class cycle:
             self.threshold.append(threshold_order[0].ticket)
             # create a new order
             order_obj = order(
-                threshold_order[0], False, self.mt5, self.local_api, "mt5")
+                threshold_order[0], False, self.mt5, self.local_api, "mt5", self.id)
             order_obj.create_order()
 
     def hedge_sell_order(self):
@@ -473,7 +479,7 @@ class cycle:
                 self.recovery.append(recovery_order[0].ticket)
                 # create a new order
                 order_obj = order(
-                    recovery_order[0], False, self.mt5, self.local_api, "mt5")
+                    recovery_order[0], False, self.mt5, self.local_api, "mt5", self.id)
                 order_obj.create_order()
         # hedge order
         if hedge_lot <= 0:
@@ -486,7 +492,7 @@ class cycle:
             self.hedge.append(hedge_order[0].ticket)
             # create a new order
             order_obj = order(
-                hedge_order[0], False, self.mt5, self.local_api, "mt5")
+                hedge_order[0], False, self.mt5, self.local_api, "mt5", self.id)
             order_obj.create_order()
             # update the upper and lower by the zone index
             self.lower_bound = float(hedge_order[0].price_open) - float(
@@ -513,7 +519,7 @@ class cycle:
         for ticket in self.recovery:
             order_data_db = self.local_api.get_order_by_ticket(ticket)
             orderobj = order(order_data_db, self.is_pending,
-                             self.mt5, self.local_api, "db")
+                             self.mt5, self.local_api, "db", self.id)
             orderobj.close_order()
             orderobj.is_closed = True
             orderobj.update_order()
@@ -528,7 +534,7 @@ class cycle:
                 last_hedge = self.hedge[-1]
                 order_data_db = self.local_api.get_order_by_ticket(last_hedge)
                 orderobj = order(order_data_db, self.is_pending,
-                                 self.mt5, self.local_api, "db")
+                                 self.mt5, self.local_api, "db", self.id)
                 last_hedge_type = orderobj.type
                 last_hedge_profit = orderobj.profit
                 if last_hedge_type == Mt5.ORDER_TYPE_SELL and last_hedge_profit < 0:
@@ -538,7 +544,7 @@ class cycle:
                 last_hedge = self.hedge[-1]
                 order_data_db = self.local_api.get_order_by_ticket(last_hedge)
                 orderobj = order(order_data_db, self.is_pending,
-                                 self.mt5, self.local_api, "db")
+                                 self.mt5, self.local_api, "db", self.id)
                 last_hedge_type = orderobj.type
                 last_hedge_profit = orderobj.profit
                 if last_hedge_type == Mt5.ORDER_TYPE_BUY and last_hedge_profit < 0:

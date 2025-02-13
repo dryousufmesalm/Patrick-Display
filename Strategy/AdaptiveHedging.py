@@ -289,7 +289,7 @@ class AdaptiveHedging(Strategy):
 
         if order1:
             order_obj = order(order1[0], is_pending,
-                              self.meta_trader, self.local_api, "mt5")
+                              self.meta_trader, self.local_api, "mt5","")
             order_obj.create_order()
             if is_pending:
                 New_cycle.add_pending_order(order1[0].ticket)
@@ -298,7 +298,7 @@ class AdaptiveHedging(Strategy):
 
         if order2 and order2 != -2:
             order_obj = order(order2[0], is_pending,
-                              self.meta_trader, self.local_api, "mt5")
+                              self.meta_trader, self.local_api, "mt5","")
             order_obj.create_order()
             if is_pending:
                 New_cycle.add_pending_order(order2[0].ticket)
