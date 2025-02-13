@@ -275,11 +275,12 @@ class cycle:
     # create a new cycle
 
     def create_cycle(self):
+        self.orders = self.combine_orders()
         cycle_data = self.local_api.create_cycle(self.to_dict())
         for order_ticket in self.orders:
             order_data = self.local_api.get_order_by_ticket(order_ticket)
             order_objec = order(order_data, order_data.is_pending,
-                                self.mt5, self.local_api, "db", self.id)
+                                self.mt5, self.local_api, "db", cycle_data.id)
             order_objec.update_order()
         return cycle_data
     # close cycle

@@ -248,17 +248,17 @@ class CycleTrader(Strategy):
             
             
         }
-        New_cycle = cycle(data, self.local_api,self.meta_trader,self)
+        New_cycle = cycle(data,self.meta_trader,self.bot)
          
         if order1:
-            order_obj = order( order1[0], is_pending,self.meta_trader,self.local_api,"mt5")
+            order_obj = order( order1[0], is_pending,self.meta_trader,self.local_api,"mt5","")
             order_obj.create_order()
             if is_pending:
                 New_cycle.add_pending_order(order1[0].ticket)
             else:
                 New_cycle.add_initial_order(order1[0].ticket)
         if order2 and order2 != -2:
-            order_obj = order( order2[0], is_pending,self.meta_trader,self.local_api,"mt5")
+            order_obj = order( order2[0], is_pending,self.meta_trader,self.local_api,"mt5","")
             order_obj.create_order()
             if is_pending:
                 New_cycle.add_pending_order(order2[0].ticket)

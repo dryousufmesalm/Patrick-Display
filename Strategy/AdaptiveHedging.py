@@ -285,7 +285,7 @@ class AdaptiveHedging(Strategy):
 
         }
 
-        New_cycle = cycle(data, self.local_api, self.meta_trader, self)
+        New_cycle = cycle(data, self.meta_trader, self.bot)
 
         if order1:
             order_obj = order(order1[0], is_pending,
