@@ -127,6 +127,8 @@ class cycle:
             "orders": {
                 "orders": []},
             "opened_by": self.opened_by,
+            "cycle_type": self.cycle_type,
+
 
 
         }

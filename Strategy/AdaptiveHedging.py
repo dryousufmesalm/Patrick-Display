@@ -70,7 +70,7 @@ class AdaptiveHedging(Strategy):
         self.settings = settings
         self.init_settings()
 
-    def handle_event(self, event):
+    async def handle_event(self, event):
         """
         This function handles incoming events for the adaptive hedging strategy.
 
@@ -201,6 +201,8 @@ class AdaptiveHedging(Strategy):
         elif message == "close_all_pending_orders":
             orders = self.local_api.get_open_pending_orders()
             for order_data in orders:
+                if order_data.is_pending == False:
+                    continue
                 order_obj = order(order_data, order_data.is_pending,
                                   self.meta_trader, self.local_api, "db")
                 order_obj.close_order()
@@ -289,7 +291,7 @@ class AdaptiveHedging(Strategy):
 
         if order1:
             order_obj = order(order1[0], is_pending,
-                              self.meta_trader, self.local_api, "mt5","")
+                              self.meta_trader, self.local_api, "mt5", "")
             order_obj.create_order()
             if is_pending:
                 New_cycle.add_pending_order(order1[0].ticket)
@@ -298,7 +300,7 @@ class AdaptiveHedging(Strategy):
 
         if order2 and order2 != -2:
             order_obj = order(order2[0], is_pending,
-                              self.meta_trader, self.local_api, "mt5","")
+                              self.meta_trader, self.local_api, "mt5", "")
             order_obj.create_order()
             if is_pending:
                 New_cycle.add_pending_order(order2[0].ticket)
@@ -340,7 +342,7 @@ class AdaptiveHedging(Strategy):
                     self.take_profit, self.client)
             time.sleep(1)
 
-    def run_in_thread(self):
+    async def run_in_thread(self):
         """
         This function runs the adaptive hedging strategy in a separate thread.
         """

@@ -13,7 +13,7 @@ class Strategy(ABC):
         self.stop=False
    
     @abstractmethod
-    def handle_event(self, event):
+    async def handle_event(self, event):
         """Handle the incoming event"""
         pass
     @abstractmethod

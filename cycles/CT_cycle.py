@@ -142,6 +142,7 @@ class cycle:
             "orders": {
                 "orders": []},
             "opened_by": self.opened_by,
+            "cycle_type": self.cycle_type,
 
 
         }
@@ -205,13 +206,13 @@ class cycle:
         if order_ticket in self.recovery:
             self.recovery.remove(order_ticket)
 
-    # remove threshold order from closed list\
+    # remove threshold order from  list\
     def remove_threshold_order(self, order_ticket):
-        if order_ticket in self.closed:
+        if order_ticket in self.threshold:
             self.threshold.remove(order_ticket)
 
     # update cylce orders
-    def update_cycle(self, remote_api):
+    async def update_cycle(self, remote_api):
         self.total_profit = 0
         self.total_volume = 0
         self.sellLots = 0
@@ -248,6 +249,10 @@ class cycle:
                     self.add_initial_order(order_ticket)
                     self.is_pending = False
                     self.status = "initial"
+            for order_ticket in self.closed:
+                order_data = self.local_api.get_order_by_ticket(order_ticket)
+                if order_data:
+                    self.total_profit += order_data.profit+order_data.swap+order_data.commission
         if len(self.pending) == 0 and self.is_pending is True:
             self.is_pending = False
             self.status = "initial"
@@ -310,7 +315,7 @@ class cycle:
 
         return True
 
-    def manage_cycle_orders(self, threshold):
+    async def manage_cycle_orders(self, threshold):
         if self.is_pending:
             return
         if self.is_closed:
@@ -337,9 +342,9 @@ class cycle:
             #     self.go_opposite_direction()
             self.go_hedge_direction()
         # add new order every x pips
-        if ask >= self.threshold_upper:
+        if ask >= self.threshold_upper and len(self.hedge)>0:
             self.threshold_buy_order(threshold)
-        elif bid <= self.threshold_lower:
+        elif bid <= self.threshold_lower and len(self.hedge)>0:
             self.threshold_sell_order(threshold)
 
     def close_initial_buy_orders(self):
@@ -556,7 +561,7 @@ class cycle:
         self.local_api.Update_cycle(self.id, self.to_dict())
     #  close   cycle when hits  takeprofit
 
-    def close_cycle_on_takeprofit(self, take_profit, remote_api):
+    async def close_cycle_on_takeprofit(self, take_profit, remote_api):
         if self.total_profit >= take_profit:
             self.is_pending = False
             self.is_closed = True

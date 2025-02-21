@@ -5,7 +5,7 @@ from helpers.store import store
 from helpers.actions_creators import add_user, add_mt5, GetUser
 from Api.APIHandler import API
 # from Views.globals.app_state import store
-
+import asyncio
 from Bots.account import Account
 
 from Orders.orders_manager import orders_manager
@@ -81,12 +81,20 @@ def launch_metatrader(data, authorized):
         auth.login(server_username, server_password)
 
         user_account = Account(auth, expert)
-        user_account.on_init()
-        user_account.run_in_thread()
+        asyncio.run(user_account.on_init())
         OrdersManager = orders_manager(expert)
         cyclesManager = cycles_manager(expert, auth, user_account)
-        OrdersManager.run_in_thread()
-        cyclesManager.run_in_thread()
+
+        async def main():
+            task1 = asyncio.create_task(user_account.run_in_background())
+            task2 = asyncio.create_task(OrdersManager.run_in_thread())
+            task3 = asyncio.create_task(cyclesManager.run_in_thread())
+            await asyncio.gather(task1, task2, task3)
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.create_task(main())
+        loop.run_forever()
         print(acc)
         authorized.put(True)
         while True:

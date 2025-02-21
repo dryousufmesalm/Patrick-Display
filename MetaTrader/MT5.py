@@ -1,7 +1,8 @@
 """ MetaTrader 5 expert advisor class to manage the MetaTrader 5 expert advisor. """
-import MetaTrader5 as Mt5
-
+# from aiomql import MetaTrader as MT5
 from Views.globals.app_state import store
+import MetaTrader5 as Mt5
+# Mt5=MT5()
 
 
 class MetaTrader:
