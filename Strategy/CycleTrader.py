@@ -248,9 +248,9 @@ class CycleTrader(Strategy):
             upper_bound = float(order1[0].price_open) + float(
                 self.zones[0]) * float(self.meta_trader.get_pips(self.symbol))
             upper_threshold = float(upper_bound) + float(
-                self.autotrade_threshold * float(self.meta_trader.get_pips(self.symbol)))
+                self.zone_forward * float(self.meta_trader.get_pips(self.symbol)))
             lower_threshold = float(lower_bound) - float(
-                self.autotrade_threshold * float(self.meta_trader.get_pips(self.symbol)))
+                self.zone_forward * float(self.meta_trader.get_pips(self.symbol)))
             data = {
                 "account": self.bot.account.id,
                 "bot": self.bot.id,

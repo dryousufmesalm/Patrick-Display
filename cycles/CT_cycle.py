@@ -251,7 +251,7 @@ class cycle:
                     self.status = "initial"
             for order_ticket in self.closed:
                 order_data = self.local_api.get_order_by_ticket(order_ticket)
-                if order_data:
+                if order_data and order_data.kind!="pending" and order_data.kind != "initial" and order_data.kind =="recovery":
                     self.total_profit += order_data.profit+order_data.swap+order_data.commission
         if len(self.pending) == 0 and self.is_pending is True:
             self.is_pending = False
