@@ -544,6 +544,12 @@ class cycle:
                 last_hedge_type = orderobj.type
                 last_hedge_profit = orderobj.profit
                 if last_hedge_type == Mt5.ORDER_TYPE_SELL and last_hedge_profit < 0:
+                    if(len(self.recovery) > 0):
+                        last_recovery= self.recovery[-1]
+                        order_data_recovery_db = self.local_api.get_order_by_ticket(
+                            last_recovery)
+                        if(order_data_recovery_db.open_price>self.upper_bound):
+                            return
                     self.close_recovery_orders()
                     self.hedge_sell_order()
             elif bid < self.lower_bound:
@@ -554,6 +560,12 @@ class cycle:
                 last_hedge_type = orderobj.type
                 last_hedge_profit = orderobj.profit
                 if last_hedge_type == Mt5.ORDER_TYPE_BUY and last_hedge_profit < 0:
+                    if (len(self.recovery) > 0):
+                        last_recovery = self.recovery[-1]
+                        order_data_recovery_db = self.local_api.get_order_by_ticket(
+                            last_recovery)
+                        if (order_data_recovery_db.open_price < self.upper_bound):
+                            return
                     self.close_recovery_orders()
                     self.hedge_buy_order()
 
