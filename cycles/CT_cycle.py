@@ -548,7 +548,7 @@ class cycle:
                         last_recovery= self.recovery[-1]
                         order_data_recovery_db = self.local_api.get_order_by_ticket(
                             last_recovery)
-                        if(order_data_recovery_db.open_price>self.upper_bound):
+                        if ( order_data_recovery_db.type==Mt5.ORDER_TYPE_SELL):
                             return
                     self.close_recovery_orders()
                     self.hedge_sell_order()
@@ -564,7 +564,7 @@ class cycle:
                         last_recovery = self.recovery[-1]
                         order_data_recovery_db = self.local_api.get_order_by_ticket(
                             last_recovery)
-                        if (order_data_recovery_db.open_price < self.upper_bound):
+                        if (order_data_recovery_db.type == Mt5.ORDER_TYPE_BUY):
                             return
                     self.close_recovery_orders()
                     self.hedge_buy_order()
