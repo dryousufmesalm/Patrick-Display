@@ -38,6 +38,7 @@ class CycleTrader(Strategy):
         self.last_cycle_price = None
         self.logger = logger
         self.hedges_numbers=None
+        self.ADD_All_to_PNL=True
         self.init_settings()
 
     def initialize(self, config, settings):
@@ -59,6 +60,7 @@ class CycleTrader(Strategy):
         self.autotrade = self.config["autotrade"]
         self.autotrade_threshold = self.config["autotrade_threshold"]
         self.hedges_numbers = self.config["hedges_numbers"]
+        self.ADD_All_to_PNL=self.config["buy_and_sell_add_to_pnl"]
         if self.settings and hasattr(self.settings, 'stopped'):
             self.stop = self.settings.stopped
         else:

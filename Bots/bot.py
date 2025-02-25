@@ -71,7 +71,7 @@ class Bot:
 
     def update_configs(self):
         """ Update the bot's settings """
-
+          
         try:
             if self.strategy_name == "Tony AH Recovery":
                 self.strategy.update_configs(self.configs, self.settings)

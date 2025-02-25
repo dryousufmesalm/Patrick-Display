@@ -252,7 +252,7 @@ class cycle:
                     self.status = "initial"
         for order_ticket in self.closed:
             order_data = self.local_api.get_order_by_ticket(order_ticket)
-            if order_data and order_data.kind!="pending" and order_data.kind != "initial" :
+            if (order_data and order_data.kind != "pending" and order_data.kind != "initial") or (self.bot.ADD_All_to_PNL==True):
                 self.total_profit += order_data.profit+order_data.swap+order_data.commission
         if len(self.pending) == 0 and self.is_pending is True:
             self.is_pending = False
@@ -565,15 +565,15 @@ class cycle:
                                  self.mt5, self.local_api, "db", self.id)
                 last_hedge_type = orderobj.type
                 last_hedge_profit = orderobj.profit
-                if last_hedge_type == Mt5.ORDER_TYPE_SELL and last_hedge_profit < 0:
-                    if(len(self.recovery) > 0):
-                        last_recovery= self.recovery[-1]
-                        order_data_recovery_db = self.local_api.get_order_by_ticket(
-                            last_recovery)
-                        if ( order_data_recovery_db.type==Mt5.ORDER_TYPE_SELL):
-                            return
-                    self.close_recovery_orders()
-                    self.hedge_sell_order()
+                # if last_hedge_type == Mt5.ORDER_TYPE_SELL and last_hedge_profit < 0:
+                if(len(self.recovery) > 0):
+                    last_recovery= self.recovery[-1]
+                    order_data_recovery_db = self.local_api.get_order_by_ticket(
+                        last_recovery)
+                    if ( order_data_recovery_db.type==Mt5.ORDER_TYPE_SELL):
+                        return
+                self.close_recovery_orders()
+                self.hedge_sell_order()
             elif bid < self.lower_bound:
                 last_hedge = self.hedge[-1]
                 order_data_db = self.local_api.get_order_by_ticket(last_hedge)
@@ -581,15 +581,15 @@ class cycle:
                                  self.mt5, self.local_api, "db", self.id)
                 last_hedge_type = orderobj.type
                 last_hedge_profit = orderobj.profit
-                if last_hedge_type == Mt5.ORDER_TYPE_BUY and last_hedge_profit < 0:
-                    if (len(self.recovery) > 0):
-                        last_recovery = self.recovery[-1]
-                        order_data_recovery_db = self.local_api.get_order_by_ticket(
-                            last_recovery)
-                        if (order_data_recovery_db.type == Mt5.ORDER_TYPE_BUY):
-                            return
-                    self.close_recovery_orders()
-                    self.hedge_buy_order()
+                # if last_hedge_type == Mt5.ORDER_TYPE_BUY and last_hedge_profit < 0:
+                if (len(self.recovery) > 0):
+                    last_recovery = self.recovery[-1]
+                    order_data_recovery_db = self.local_api.get_order_by_ticket(
+                        last_recovery)
+                    if (order_data_recovery_db.type == Mt5.ORDER_TYPE_BUY):
+                        return
+                self.close_recovery_orders()
+                self.hedge_buy_order()
 
     def update_CT_cycle(self):
         self.local_api.Update_cycle(self.id, self.to_dict())
