@@ -35,5 +35,6 @@ class CTCycle(SQLModel, table=True):
     threshold: List[int] = Field(default_factory=list, sa_column=Column(JSON))
     cycle_type: str | None
 
+
     class Config:
         arbitrary_types_allowed = True

@@ -34,6 +34,7 @@ class Account:
         self.mt5_accounts_info = None
         self.bots = []
         self.stop = False
+        self.symbol_price = None
         self.ah_repo = AHRepo(engine=engine)
         self.ct_repo = CTRepo(engine=engine)
 
@@ -42,7 +43,7 @@ class Account:
         validated = self.validate()
         if validated:
             await self.init_bots()
-            self.update_symbols()
+            await self.update_symbols()
 
     def validate(self):
         """ Validate the account """
@@ -99,7 +100,8 @@ class Account:
             tasks = [
                 asyncio.create_task(self.update_account()),
                 asyncio.create_task(self.subscribe()),
-                asyncio.create_task(self.refresh_token())
+                asyncio.create_task(self.refresh_token()),
+                asyncio.create_task(self.update_symbols_price()),
             ]
             await asyncio.gather(*tasks)
             logger.info("Background tasks started!")
@@ -190,7 +192,7 @@ class Account:
             else:
                 logger.info(message)
                 await self.route_event_to_bot(event, bot_id)
-                try :
+                try:
                     self.client.delete_event(event.id)
                 except Exception as e:
                     logger.error(f"Failed to delete event: {e}")
@@ -221,7 +223,7 @@ class Account:
                     f"Failed to subscribe to events due to an unexpected error: {e}")
             await asyncio.sleep(1)
 
-    def update_symbols(self):
+    async def update_symbols(self):
         """ Update the symbols """
         symbols = self.meta_trader.get_symbols_from_watch()
         symbols = [symbol.name for symbol in symbols]
@@ -229,8 +231,38 @@ class Account:
             "symbols": {"symbols": symbols},
         }
         self.client.update_account_symbols(self.id, data)
+        database_symbols = self.client.get_symbols_by_account(self.id)
+
+        # create a symbols
+        async def update_symbols_task():
+            database_symbol_names = [
+                db_symbol.name for db_symbol in database_symbols]
+            for symbol in symbols:
+                if symbol not in database_symbol_names:
+                    symbol_data = {
+                        "name": symbol,
+                        "price": self.meta_trader.get_bid(symbol),
+                        "account": self.id,
+                    }
+                    self.client.create_symbol(symbol_data)
+
+        asyncio.create_task(update_symbols_task())
 
     def run_bots(self):
         """ Run the bots """
         for bot in self.bots:
             bot.run()
+
+    async def update_symbols_price(self):
+        while True:
+            try:
+                for bot in self.bots:
+                    """ Update the symbol price """
+                    symbol_data = {
+                        "price": self.meta_trader.get_bid(bot.symbol_name),
+                    }
+                    self.client.update_symbol(bot.symbol, symbol_data)
+                await asyncio.sleep(1)
+            except Exception as e:
+                logger.error(f"Failed to handle event: {e}")
+                await asyncio.sleep(1)

@@ -169,7 +169,13 @@ class API:
         except Exception as e:
             logging.error(f"Failed to get symbol by ID: {e}")
             return None
-
+    def get_symbols_by_account(self, account):
+        """Get a symbol by its name."""
+        try:
+            return self.client.collection("symbols").get_full_list(200, {"filter": f"account = '{account}'"})
+        except Exception as e:
+            logging.error(f"Failed to get symbol: {e}")
+            return None
     def get_symbol(self, account_id):
         """Get a symbol by its name."""
         try:
@@ -184,6 +190,13 @@ class API:
             return self.client.collection("symbols").create(data)
         except Exception as e:
             logging.error(f"Failed to create symbol: {e}")
+            return None
+    def update_symbol(self, symbol_id, data):
+        """Update a symbol."""
+        try:
+            return self.client.collection("symbols").update(symbol_id, data)
+        except Exception as e:
+            logging.error(f"Failed to update symbol: {e}")
             return None
 
     def create_AH_cycle(self, data):

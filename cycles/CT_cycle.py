@@ -52,10 +52,10 @@ class cycle:
         self.local_api = CTRepo(engine=engine)
         self.mt5 = mt5
         self.bot = bot
-        self.threshold_upper = data.threshold_upper if source == "db" else 0 if source == "remote" else data[
-            'threshold_upper']
-        self.threshold_lower = data.threshold_lower if source == "db" else 0 if source == "remote" else data[
-            'threshold_lower']
+        self.threshold_upper = data.threshold_upper if source == "db" else data[
+            'threshold_top'] if source == "remote" else data["threshold_upper"]
+        self.threshold_lower = data.threshold_lower if source == "db" else data[
+            'threshold_bottom'] if source == "remote" else data["threshold_lower"]
         self.cycle_type = data.cycle_type if source == "db" else data['cycle_type']
 
         self.orders = self.get_orders_from_remote(
@@ -113,8 +113,8 @@ class cycle:
             "threshold": self.threshold,
             "opened_by": self.opened_by,
             "remote_id": self.cycle_id,
-            "threshold_upper": self.threshold_upper,
-            "threshold_lower": self.threshold_lower,
+            "threshold_upper": round(float(self.threshold_upper), 2),
+            "threshold_lower": round(float(self.threshold_lower), 2),
             "cycle_type": self.cycle_type,
 
 
@@ -143,7 +143,8 @@ class cycle:
                 "orders": []},
             "opened_by": self.opened_by,
             "cycle_type": self.cycle_type,
-
+            "threshold_top": round(float(self.threshold_upper),2),
+            "threshold_bottom": round(float(self.threshold_lower),2)
 
         }
         #  go through the orders and add them to the data
@@ -342,11 +343,17 @@ class cycle:
             #     self.go_opposite_direction()
             self.go_hedge_direction()
         # add new order every x pips
-        if ask >= self.threshold_upper and len(self.hedge)>0:
-            self.threshold_buy_order(threshold)
-        elif bid <= self.threshold_lower and len(self.hedge)>0:
-            self.threshold_sell_order(threshold)
-
+        if ask >= self.threshold_upper and len(self.hedge) > 0 and self.check_if_threshold_above_upper()==False:
+            self.threshold_buy_order(self.threshold_upper)
+        elif bid <= self.threshold_lower and len(self.hedge)>0 and self.check_if_threshold_below_bottom()==False:
+            self.threshold_sell_order(self.threshold_upper)
+        if ask >= self.threshold_upper+threshold * self.mt5.get_pips(self.symbol) and len(self.hedge) > 0:
+            self.threshold_buy_order(
+                self.threshold_upper+threshold * self.mt5.get_pips(self.symbol))
+        elif bid <= self.threshold_lower - threshold * self.mt5.get_pips(self.symbol) and len(self.hedge)>0:
+            self.threshold_sell_order(
+                self.threshold_lower - threshold * self.mt5.get_pips(self.symbol))
+       
     def close_initial_buy_orders(self):
         total_initial = len(self.initial)
         if total_initial > 1:
@@ -360,7 +367,26 @@ class cycle:
                     self.initial.pop(i)
                     self.closed.append(ticket)
                     break
+    def check_if_threshold_below_bottom(self):
+        for order_ticket in self.threshold:
+            order_data_db = self.local_api.get_order_by_ticket(order_ticket)
+            orderobj = order(order_data_db, self.is_pending,
+                             self.mt5, self.local_api, "db", self.id)
+            if orderobj.type == Mt5.ORDER_TYPE_SELL:
+                if orderobj.open_price <= self.threshold_lower:
+                    return True
+        
+        return False
+    def check_if_threshold_above_upper(self):
+        for order_ticket in self.threshold:
+            order_data_db = self.local_api.get_order_by_ticket(order_ticket)
+            orderobj = order(order_data_db, self.is_pending,
+                             self.mt5, self.local_api, "db", self.id)
+            if orderobj.type == Mt5.ORDER_TYPE_BUY:
+                if orderobj.open_price >= self.threshold_upper:
+                    return True
 
+        return False
     def close_initial_sell_orders(self):
         total_sells = len(self.initial)
         if total_sells > 1:
@@ -440,10 +466,10 @@ class cycle:
     def threshold_buy_order(self, threshold):
         self.lot_idx = 0
         threshold_order = self.mt5.buy(
-            self.symbol, self.bot.lot_sizes[self.lot_idx], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "threshold")
+            self.symbol, self.bot.lot_sizes[self.lot_idx], self.bot.bot.magic, self.bot.hedges_numbers, 0, "PIPS", self.bot.slippage, "threshold")
         if len(threshold_order) > 0:
             # add the order to the hedge list
-            self.threshold_upper += threshold * self.mt5.get_pips(self.symbol)
+            self.threshold_upper = threshold 
             self.threshold.append(threshold_order[0].ticket)
             # create a new order
             order_obj = order(
@@ -453,10 +479,10 @@ class cycle:
     def threshold_sell_order(self, threshold):
         self.lot_idx = 0
         threshold_order = self.mt5.sell(
-            self.symbol, self.bot.lot_sizes[self.lot_idx], self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "threshold")
+            self.symbol, self.bot.lot_sizes[self.lot_idx], self.bot.bot.magic, self.bot.hedges_numbers, 0, "PIPS", self.bot.slippage, "threshold")
         if len(threshold_order) > 0:
             # add the order to the hedge list
-            self.threshold_lower -= threshold * self.mt5.get_pips(self.symbol)
+            self.threshold_lower = threshold 
             self.threshold.append(threshold_order[0].ticket)
             # create a new order
             order_obj = order(
@@ -574,10 +600,10 @@ class cycle:
     #  close   cycle when hits  takeprofit
 
     async def close_cycle_on_takeprofit(self, take_profit, remote_api):
+        self.update_CT_cycle()
         if self.total_profit >= take_profit:
             self.is_pending = False
             self.is_closed = True
             self.close_cycle(False, 0, "MetaTrader5")
-            self.update_CT_cycle()
             remote_api.update_CT_cycle_by_id(
                 self.cycle_id, self.to_remote_dict())

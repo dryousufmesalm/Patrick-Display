@@ -13,6 +13,7 @@ class Bot:
         self.account = None
         self.strategy_name = None
         self.symbol = None
+        self.symbol_name = None
         self.magic = None
         self.configs = None
         self.client = client
@@ -53,11 +54,11 @@ class Bot:
         try:
             if self.strategy_name == "Tony AH Recovery":
                 self.strategy = AdaptiveHedging(
-                    self.meta_trader, self.configs, self.client, self.symbol, self)
+                    self.meta_trader, self.configs, self.client, self.symbol_name, self)
                 self.strategy.initialize(self.configs, self.settings)
             elif self.strategy_name == "Cycles Trader":
                 self.strategy = CycleTrader(
-                    self.meta_trader, self.configs, self.client, self.symbol, self)
+                    self.meta_trader, self.configs, self.client, self.symbol_name, self)
                 self.strategy.initialize(self.configs, self.settings)
             elif self.strategy_name == "Stock rader":
                 self.strategy = StockTrader(
@@ -96,10 +97,12 @@ class Bot:
         self.configs = bot.bot_configs
         self.settings = bot.settings
         self.symbol = bot.bot_configs["symbol"]
+        self.symbol = bot.symbol
+        self.symbol_name = self.client.get_symbol_by_id(self.symbol)[0].name
         return bot
 
     async def handle_event(self, event):
-        """ Handle the incoming event """
+        """ Handle the incoming event """   
         if self.strategy:
             await self.route_to_strategy(event)
             logging.info("Got event: %s", event)
