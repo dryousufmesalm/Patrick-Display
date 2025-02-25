@@ -342,11 +342,9 @@ class cycle:
             # if not self.bot.disable_new_cycle_recovery:
             #     self.go_opposite_direction()
             self.go_hedge_direction()
+
         # add new order every x pips
-        if ask >= self.threshold_upper and len(self.hedge) > 0 and self.check_if_threshold_above_upper()==False:
-            self.threshold_buy_order(self.threshold_upper)
-        elif bid <= self.threshold_lower and len(self.hedge)>0 and self.check_if_threshold_below_bottom()==False:
-            self.threshold_sell_order(self.threshold_upper)
+        self.threshold_Reposition()
         if ask >= self.threshold_upper+threshold * self.mt5.get_pips(self.symbol) and len(self.hedge) > 0:
             self.threshold_buy_order(
                 self.threshold_upper+threshold * self.mt5.get_pips(self.symbol))
@@ -367,26 +365,24 @@ class cycle:
                     self.initial.pop(i)
                     self.closed.append(ticket)
                     break
-    def check_if_threshold_below_bottom(self):
+    def threshold_Reposition(self):
+        lowest=self.lower_bound
+        highest=self.upper_bound
         for order_ticket in self.threshold:
             order_data_db = self.local_api.get_order_by_ticket(order_ticket)
             orderobj = order(order_data_db, self.is_pending,
                              self.mt5, self.local_api, "db", self.id)
             if orderobj.type == Mt5.ORDER_TYPE_SELL:
-                if orderobj.open_price <= self.threshold_lower:
-                    return True
-        
-        return False
-    def check_if_threshold_above_upper(self):
-        for order_ticket in self.threshold:
-            order_data_db = self.local_api.get_order_by_ticket(order_ticket)
-            orderobj = order(order_data_db, self.is_pending,
-                             self.mt5, self.local_api, "db", self.id)
+                if orderobj.open_price <= lowest:
+                    lowest = orderobj.open_price
             if orderobj.type == Mt5.ORDER_TYPE_BUY:
-                if orderobj.open_price >= self.threshold_upper:
-                    return True
-
-        return False
+                if orderobj.open_price >= highest:
+                    highest = orderobj.open_price
+        if lowest >= self.threshold_lower:
+            self.threshold_lower=lowest
+        if highest <= self.threshold_upper:
+            self.threshold_upper=highest
+        
     def close_initial_sell_orders(self):
         total_sells = len(self.initial)
         if total_sells > 1:
