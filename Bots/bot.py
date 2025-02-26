@@ -71,7 +71,7 @@ class Bot:
 
     def update_configs(self):
         """ Update the bot's settings """
-          
+
         try:
             if self.strategy_name == "Tony AH Recovery":
                 self.strategy.update_configs(self.configs, self.settings)
@@ -96,13 +96,13 @@ class Bot:
         self.magic = bot.magic_number
         self.configs = bot.bot_configs
         self.settings = bot.settings
-        self.symbol = bot.bot_configs["symbol"]
+        self.symbol_name = bot.bot_configs["symbol"]
         self.symbol = bot.symbol
         self.symbol_name = self.client.get_symbol_by_id(self.symbol)[0].name
         return bot
 
     async def handle_event(self, event):
-        """ Handle the incoming event """   
+        """ Handle the incoming event """
         if self.strategy:
             await self.route_to_strategy(event)
             logging.info("Got event: %s", event)
@@ -113,7 +113,7 @@ class Bot:
         """ Route the event to the strategy """
         if self.strategy:
             logging.info("Route to strategy")
-            await  self.strategy.handle_event(event)
+            await self.strategy.handle_event(event)
         else:
             logging.error("Strategy not initialized for bot %s", self.id)
 

@@ -67,30 +67,42 @@ class MetaTrader:
 
     def get_points(self, symbol):
         """ Get the point value of a symbol """
+        Mt5.symbol_select(symbol, True)
+
         return Mt5.symbol_info(symbol).point
 
     def get_symbol_spread(self, symbol):
         """ Get the spread of a symbol """
+        Mt5.symbol_select(symbol, True)
+
         return Mt5.symbol_info(symbol).spread
 
     def get_pips(self, symbol):
         """ Get the pips of a symbol """
+        Mt5.symbol_select(symbol, True)
+
         return Mt5.symbol_info(symbol).point * 10
 
     def get_ask(self, symbol):
         """ Get the ask price of a symbol """
+        Mt5.symbol_select(symbol, True)
+
         return Mt5.symbol_info(symbol).ask
 
     def get_bid(self, symbol):
         """ Get the bid price of a symbol """
+        Mt5.symbol_select(symbol, True)
+
         return Mt5.symbol_info(symbol).bid
 
     def get_symbol_info(self, symbol):
         """ Get the symbol information """
+        Mt5.symbol_select(symbol, True)
         return Mt5.symbol_info(symbol)
 
     def get_symbols_from_watch(self):
         """ Get the symbols from a market """
+        
         symbols = Mt5.symbols_get()
         return symbols
 

@@ -264,5 +264,5 @@ class Account:
                     self.client.update_symbol(bot.symbol, symbol_data)
                 await asyncio.sleep(1)
             except Exception as e:
-                logger.error(f"Failed to handle event: {e}")
+                logger.error(f"Failed to update symbol price: {e}")
                 await asyncio.sleep(1)
