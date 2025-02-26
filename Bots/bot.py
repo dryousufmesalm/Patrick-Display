@@ -98,7 +98,7 @@ class Bot:
         self.settings = bot.settings
         self.symbol_name = bot.bot_configs["symbol"]
         self.symbol = bot.symbol
-        self.symbol_name = self.client.get_symbol_by_id(self.symbol)[0].name
+        
         return bot
 
     async def handle_event(self, event):
