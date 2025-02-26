@@ -260,6 +260,7 @@ class Account:
                     """ Update the symbol price """
                     symbol_data = {
                         "price": self.meta_trader.get_bid(bot.symbol_name),
+                        "account": self.id,
                     }
                     self.client.update_symbol(bot.symbol, symbol_data)
                 await asyncio.sleep(1)

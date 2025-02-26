@@ -20,7 +20,7 @@ class Bot:
         self.account = account
         self.meta_trader = meta_trader
         self.strategy = None
-        self.setting = None
+        self.settings = None
 
     def initialize(self):
         """ Initialize the bot """
