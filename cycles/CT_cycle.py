@@ -60,7 +60,8 @@ class cycle:
 
         self.orders = self.get_orders_from_remote(
             data.orders['orders']) if source == 'remote' else self.combine_orders()
-
+        self.open_price = self.local_api.get_order_by_ticket(
+            self.initial[0]).open_price if len(self.initial) > 0 else 0
         self.buyLots = 0
         self.sellLots = 0
 
