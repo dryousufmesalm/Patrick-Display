@@ -281,16 +281,16 @@ class cycle:
             ask = self.mt5.get_ask(self.symbol)
             bid = self.mt5.get_bid(self.symbol)
             if ask > self.upper_bound:
-                self.close_initial_buy_orders()
                 total_sell = self.count_initial_sell_orders()
                 if total_sell >= 1:
+                    self.close_initial_buy_orders()
                     self.hedge_sell_order()
                     self.status = "recovery"
                     self.update_AH_cycle()
             elif bid < self.lower_bound:
-                self.close_initial_sell_orders()
                 total_buy = self.count_initial_buy_orders()
                 if total_buy >= 1:
+                    self.close_initial_sell_orders()
                     self.hedge_buy_order()
                     self.status = "recovery"
                     self.update_AH_cycle()
