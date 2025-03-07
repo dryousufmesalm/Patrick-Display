@@ -290,7 +290,7 @@ class CycleTrader(Strategy):
                 "threshold_lower": lower_threshold,
             }
             New_cycle = cycle(data, self.meta_trader, self.bot)
-
+            New_cycle.open_price = order1[0].price_open
             if order1:
                 order_obj = order(
                     order1[0], is_pending, self.meta_trader, self.local_api, "mt5", "")

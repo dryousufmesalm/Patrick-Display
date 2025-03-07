@@ -367,8 +367,15 @@ class cycle:
                     self.closed.append(ticket)
                     break
     def threshold_Reposition(self):
-        lowest=self.lower_bound
-        highest=self.upper_bound
+        lowest=self.threshold_lower
+        highest=self.threshold_upper
+        for initila_ticket in self.initial:
+            order_data_db = self.local_api.get_order_by_ticket(initila_ticket)
+            orderobj = order(order_data_db, self.is_pending,
+                             self.mt5, self.local_api, "db", self.id)
+            lowest=orderobj.open_price-self.bot.zones[self.zone_index] * self.mt5.get_pips(self.symbol)
+            highest=orderobj.open_price+self.bot.zones[self.zone_index] * self.mt5.get_pips(self.symbol)
+            break
         for order_ticket in self.threshold:
             order_data_db = self.local_api.get_order_by_ticket(order_ticket)
             orderobj = order(order_data_db, self.is_pending,
