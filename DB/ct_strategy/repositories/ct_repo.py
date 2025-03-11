@@ -25,7 +25,7 @@ class CTRepo:
                 CTCycle.remote_id == remote_id)).first()
             return result
 
-    def get_active_cycles(self, account) -> list[CTCycle] | None:
+    def get_active_cycles(self, bot) -> list[CTCycle] | None:
         """
         Retrieve active cycles for a given account.
 
@@ -35,12 +35,12 @@ class CTRepo:
         with Session(self.engine) as session:
             cycles = session.exec(
                 select(CTCycle).where(
-                    CTCycle.is_closed == False
+                    CTCycle.is_closed == False and CTCycle.bot == bot
                 )
             ).all()
 
             active_cycles = [
-                cycle for cycle in cycles if cycle.account == account]
+                cycle for cycle in cycles if cycle.bot == bot]
             return active_cycles
 
     def get_all_cycles(self) -> list[CTCycle] | None:

@@ -302,6 +302,7 @@ class cycle:
                                  self.mt5, self.local_api, "db", self.id)
                 if orderobj.close_order() is False:
                     return False
+            
 
         self.is_closed = True
         self.status = "closed"

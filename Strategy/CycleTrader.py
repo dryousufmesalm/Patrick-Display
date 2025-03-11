@@ -48,7 +48,7 @@ class CycleTrader(Strategy):
 
     def init_settings(self):
         """ Initialize the settings for the CycleTrader strategy """
-        self.enable_recovery = self.config["enabel_recovery"]
+        self.enable_recovery = self.config["enable_recovery"]
         self.lot_sizes = self.string_to_array(self.config["lot_sizes"])
         self.pips_step = self.config["pips_step"]
         self.slippage = self.config["slippage"]
@@ -318,9 +318,10 @@ class CycleTrader(Strategy):
         Get all active cycles.
         """
         try:
-            cycles = self.local_api.get_active_cycles(self.bot.account.id)
+            cycles = self.local_api.get_active_cycles(self.bot.id)
             active_cycles = [
                 cycle for cycle in cycles if cycle.is_closed is False]
+            
             return active_cycles
         except Exception as e:
             self.logger.error(f"Error getting active cycles: {e}")
