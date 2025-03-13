@@ -37,9 +37,9 @@ class CycleTrader(Strategy):
         self.settings = None
         self.last_cycle_price = None
         self.logger = logger
-        self.hedges_numbers=None
-        self.ADD_All_to_PNL=True
-        self.autotrade_pips_restriction=100
+        self.hedges_numbers = None
+        self.ADD_All_to_PNL = True
+        self.autotrade_pips_restriction = 100
         self.init_settings()
 
     def initialize(self, config, settings):
@@ -61,8 +61,8 @@ class CycleTrader(Strategy):
         self.autotrade = self.config["autotrade"]
         self.autotrade_threshold = self.config["autotrade_threshold"]
         self.hedges_numbers = self.config["hedges_numbers"]
-        self.ADD_All_to_PNL=self.config["buy_and_sell_add_to_pnl"]
-        self.autotrade_pips_restriction=self.config["autotrade_pips_restriction"]
+        self.ADD_All_to_PNL = self.config["buy_and_sell_add_to_pnl"]
+        self.autotrade_pips_restriction = self.config["autotrade_pips_restriction"]
         if self.settings and hasattr(self.settings, 'stopped'):
             self.stop = self.settings.stopped
         else:
@@ -321,7 +321,7 @@ class CycleTrader(Strategy):
             cycles = self.local_api.get_active_cycles(self.bot.id)
             active_cycles = [
                 cycle for cycle in cycles if cycle.is_closed is False]
-            
+
             return active_cycles
         except Exception as e:
             self.logger.error(f"Error getting active cycles: {e}")
@@ -371,11 +371,10 @@ class CycleTrader(Strategy):
                 tasks = []
                 for cycle_data in active_cycles:
                     cycle_obj = cycle(cycle_data, self.meta_trader, self, "db")
-                    if  len(cycle_obj.orders) <= 2 and len(cycle_obj.closed)==0 and len(cycle_obj.hedge)==0 :
-                        if cycle_obj.open_price>0:
-                            if cycle_obj.open_price  > down_price   and cycle_obj.open_price  < up_price:
+                    if len(cycle_obj.orders) <= 2 and len(cycle_obj.closed) == 0 and len(cycle_obj.hedge) == 0:
+                        if cycle_obj.open_price > 0:
+                            if cycle_obj.open_price > down_price and cycle_obj.open_price < up_price:
                                 New_cycles_Restrition = True
-                           
                     if not self.stop:
                         tasks.append(cycle_obj.manage_cycle_orders(
                             self.zone_forward))
@@ -383,7 +382,7 @@ class CycleTrader(Strategy):
                     tasks.append(cycle_obj.close_cycle_on_takeprofit(
                         self.take_profit, self.client))
                 await asyncio.gather(*tasks)
-                if self.autotrade  and  New_cycles_Restrition==False:
+                if self.autotrade and New_cycles_Restrition == False:
                     await self.open_new_cycle(active_cycles)
             except Exception as e:
                 self.logger.error(f"Error in run loop: {e}")
@@ -404,4 +403,4 @@ class CycleTrader(Strategy):
             thread.start()
             self.logger.info("CycleTrader strategy running in thread")
         except Exception as e:
-            self.logger.error(f"Error running in thread: {e}")  
+            self.logger.error(f"Error running in thread: {e}")

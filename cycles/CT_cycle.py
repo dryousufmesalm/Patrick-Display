@@ -144,8 +144,8 @@ class cycle:
                 "orders": []},
             "opened_by": self.opened_by,
             "cycle_type": self.cycle_type,
-            "threshold_top": round(float(self.threshold_upper),2),
-            "threshold_bottom": round(float(self.threshold_lower),2)
+            "threshold_top": round(float(self.threshold_upper), 2),
+            "threshold_bottom": round(float(self.threshold_lower), 2)
 
         }
         #  go through the orders and add them to the data
@@ -253,7 +253,7 @@ class cycle:
                     self.status = "initial"
         for order_ticket in self.closed:
             order_data = self.local_api.get_order_by_ticket(order_ticket)
-            if (order_data and order_data.kind != "pending" and order_data.kind != "initial") or (self.bot.ADD_All_to_PNL==True):
+            if (order_data and order_data.kind != "pending" and order_data.kind != "initial") or (self.bot.ADD_All_to_PNL == True):
                 self.total_profit += order_data.profit+order_data.swap+order_data.commission
         if len(self.pending) == 0 and self.is_pending is True:
             self.is_pending = False
@@ -302,7 +302,6 @@ class cycle:
                                  self.mt5, self.local_api, "db", self.id)
                 if orderobj.close_order() is False:
                     return False
-            
 
         self.is_closed = True
         self.status = "closed"
@@ -350,10 +349,10 @@ class cycle:
         if ask >= self.threshold_upper and len(self.hedge) > 0:
             self.threshold_buy_order(
                 self.threshold_upper+threshold * self.mt5.get_pips(self.symbol))
-        elif bid <= self.threshold_lower and len(self.hedge)>0:
+        elif bid <= self.threshold_lower and len(self.hedge) > 0:
             self.threshold_sell_order(
                 self.threshold_lower - threshold * self.mt5.get_pips(self.symbol))
-       
+
     def close_initial_buy_orders(self):
         total_initial = len(self.initial)
         if total_initial > 1:
@@ -376,11 +375,13 @@ class cycle:
             orderobj = order(order_data_db, self.is_pending,
                              self.mt5, self.local_api, "db", self.id)
             if orderobj.type == Mt5.ORDER_TYPE_SELL:
-                lowest = orderobj.open_price - threshold * self.mt5.get_pips(self.symbol)
+                lowest = orderobj.open_price - threshold * \
+                    self.mt5.get_pips(self.symbol)
                 highest = orderobj.open_price + self.bot.zones[self.zone_index] * self.mt5.get_pips(
                     self.symbol)+threshold * self.mt5.get_pips(self.symbol)
             if orderobj.type == Mt5.ORDER_TYPE_BUY:
-                highest = orderobj.open_price+threshold * self.mt5.get_pips(self.symbol)
+                highest = orderobj.open_price+threshold * \
+                    self.mt5.get_pips(self.symbol)
                 lowest = orderobj.open_price - self.bot.zones[self.zone_index] * self.mt5.get_pips(
                     self.symbol)-threshold * self.mt5.get_pips(self.symbol)
         for order_ticket in self.threshold:
@@ -389,15 +390,17 @@ class cycle:
                              self.mt5, self.local_api, "db", self.id)
             if orderobj.type == Mt5.ORDER_TYPE_SELL:
                 if orderobj.open_price <= lowest:
-                    lowest = orderobj.open_price
+                    lowest = orderobj.open_price - threshold * \
+                        self.mt5.get_pips(self.symbol)
             if orderobj.type == Mt5.ORDER_TYPE_BUY:
                 if orderobj.open_price >= highest:
-                    highest = orderobj.open_price
+                    highest = orderobj.open_price+threshold * \
+                        self.mt5.get_pips(self.symbol)
         if lowest > self.threshold_lower:
-            self.threshold_lower=lowest
+            self.threshold_lower = lowest
         if highest < self.threshold_upper:
-            self.threshold_upper=highest
-        
+            self.threshold_upper = highest
+
     def close_initial_sell_orders(self):
         total_sells = len(self.initial)
         if total_sells > 1:
@@ -480,7 +483,7 @@ class cycle:
             self.symbol, self.bot.lot_sizes[self.lot_idx], self.bot.bot.magic, self.bot.hedges_numbers, 0, "PIPS", self.bot.slippage, "threshold")
         if len(threshold_order) > 0:
             # add the order to the hedge list
-            self.threshold_upper = threshold 
+            self.threshold_upper = threshold
             self.threshold.append(threshold_order[0].ticket)
             # create a new order
             order_obj = order(
@@ -493,7 +496,7 @@ class cycle:
             self.symbol, self.bot.lot_sizes[self.lot_idx], self.bot.bot.magic, self.bot.hedges_numbers, 0, "PIPS", self.bot.slippage, "threshold")
         if len(threshold_order) > 0:
             # add the order to the hedge list
-            self.threshold_lower = threshold 
+            self.threshold_lower = threshold
             self.threshold.append(threshold_order[0].ticket)
             # create a new order
             order_obj = order(
@@ -581,11 +584,11 @@ class cycle:
                 last_hedge_type = orderobj.type
                 last_hedge_profit = orderobj.profit
                 # if last_hedge_type == Mt5.ORDER_TYPE_SELL and last_hedge_profit < 0:
-                if(len(self.recovery) > 0):
-                    last_recovery= self.recovery[-1]
+                if (len(self.recovery) > 0):
+                    last_recovery = self.recovery[-1]
                     order_data_recovery_db = self.local_api.get_order_by_ticket(
                         last_recovery)
-                    if ( order_data_recovery_db.type==Mt5.ORDER_TYPE_SELL):
+                    if (order_data_recovery_db.type == Mt5.ORDER_TYPE_SELL):
                         return
                 self.close_recovery_orders()
                 self.hedge_sell_order()
