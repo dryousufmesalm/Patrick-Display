@@ -326,7 +326,7 @@ class CycleTrader(Strategy):
         except Exception as e:
             self.logger.error(f"Error getting active cycles: {e}")
 
-    async def open_new_cycle(self, active_cycles):
+    async def open_new_cycle(self, active_cycles, cycles_Restrition):
         """
         Open new cycle automatically every threshold pips from the last cycle with limit max cycles.
         """
@@ -338,14 +338,15 @@ class CycleTrader(Strategy):
                 up_price = self.last_cycle_price+self.autotrade_threshold*pips
                 down_price = self.last_cycle_price-self.autotrade_threshold*pips
                 if ask >= up_price or bid <= down_price:
-                    if self.stop is False:
-                        order1 = self.meta_trader.buy(
-                            self.symbol, self.lot_sizes[0], self.bot.magic, 0, 0, "PIPS", self.slippage, "initial")
-                        order2 = self.meta_trader.sell(
-                            self.symbol, self.lot_sizes[0], self.bot.magic, 0, 0, "PIPS", self.slippage, "initial")
-                        await self.create_cycle(order1, order2, False,
-                                                False, 0, "MetaTrader5", "BUY&SELL")
-                        self.last_cycle_price = ask if ask >= up_price else bid if bid <= down_price else 0
+                    self.last_cycle_price = ask if ask >= up_price else bid if bid <= down_price else 0
+                    if self.autotrade and cycles_Restrition == False:
+                        if self.stop is False:
+                            order1 = self.meta_trader.buy(
+                                self.symbol, self.lot_sizes[0], self.bot.magic, 0, 0, "PIPS", self.slippage, "initial")
+                            order2 = self.meta_trader.sell(
+                                self.symbol, self.lot_sizes[0], self.bot.magic, 0, 0, "PIPS", self.slippage, "initial")
+                            await self.create_cycle(order1, order2, False,
+                                                    False, 0, "MetaTrader5", "BUY&SELL")
         except Exception as e:
             self.logger.error(f"Error opening new cycle: {e}")
 
@@ -381,9 +382,9 @@ class CycleTrader(Strategy):
                     tasks.append(cycle_obj.update_cycle(self.client))
                     tasks.append(cycle_obj.close_cycle_on_takeprofit(
                         self.take_profit, self.client))
+                tasks.append(self.open_new_cycle(
+                    active_cycles, New_cycles_Restrition))
                 await asyncio.gather(*tasks)
-                if self.autotrade and New_cycles_Restrition == False:
-                    await self.open_new_cycle(active_cycles)
             except Exception as e:
                 self.logger.error(f"Error in run loop: {e}")
             await asyncio.sleep(1)

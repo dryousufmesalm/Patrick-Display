@@ -439,7 +439,7 @@ class cycle:
         self.orders = self.combine_orders()
         self.sellLots = 0
         self.buyLots = 0
-        for order_ticket in self.orders:
+        for order_ticket in self.initial:
             order_data = self.local_api.get_order_by_ticket(order_ticket)
             if order_data:
                 if order_data.type == Mt5.ORDER_TYPE_SELL:
@@ -458,7 +458,7 @@ class cycle:
                     recovery_order[0], False, self.mt5, self.local_api, "mt5", self.id)
                 order_obj.create_order()
 
-        if hedge_lot <= 0:
+        if hedge_lot <= 0 or len(self.hedge) > 0:
             return
         hedge_order = self.mt5.sell(
             self.symbol, hedge_lot, self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "hedge")
@@ -508,7 +508,7 @@ class cycle:
 
         self.sellLots = 0
         self.buyLots = 0
-        for order_ticket in self.orders:
+        for order_ticket in self.initial:
             order_data = self.local_api.get_order_by_ticket(order_ticket)
             if order_data:
                 if order_data.type == Mt5.ORDER_TYPE_SELL:
@@ -528,7 +528,7 @@ class cycle:
                     recovery_order[0], False, self.mt5, self.local_api, "mt5", self.id)
                 order_obj.create_order()
         # hedge order
-        if hedge_lot <= 0:
+        if hedge_lot <= 0 or len(self.hedge) > 0:
             return
         hedge_order = self.mt5.buy(
             self.symbol, hedge_lot, self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "hedge")
