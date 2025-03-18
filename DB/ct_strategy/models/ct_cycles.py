@@ -27,6 +27,8 @@ class CTCycle(SQLModel, table=True):
     symbol: str
     threshold_lower: float
     threshold_upper: float
+    base_threshold_lower: float
+    base_threshold_upper: float
     initial: List[int] = Field(default_factory=list, sa_column=Column(JSON))
     hedge: List[int] = Field(default_factory=list, sa_column=Column(JSON))
     pending: List[int] = Field(default_factory=list, sa_column=Column(JSON))
@@ -34,7 +36,6 @@ class CTCycle(SQLModel, table=True):
     recovery: List[int] = Field(default_factory=list, sa_column=Column(JSON))
     threshold: List[int] = Field(default_factory=list, sa_column=Column(JSON))
     cycle_type: str | None
-
 
     class Config:
         arbitrary_types_allowed = True

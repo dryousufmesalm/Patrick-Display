@@ -52,16 +52,17 @@ class cycle:
         self.local_api = CTRepo(engine=engine)
         self.mt5 = mt5
         self.bot = bot
-        self.threshold_upper = data.threshold_upper if source == "db" else data[
-            'threshold_top'] if source == "remote" else data["threshold_upper"]
-        self.threshold_lower = data.threshold_lower if source == "db" else data[
-            'threshold_bottom'] if source == "remote" else data["threshold_lower"]
-        self.cycle_type = data.cycle_type if source == "db" else data['cycle_type']
+        self.threshold_upper = data.threshold_upper if source == "db" else data.threshold_top if source == "remote" else data["threshold_upper"]
+        self.threshold_lower = data.threshold_lower if source == "db" else data.threshold_bottom if source == "remote" else data[
+            "threshold_lower"]
+        self.cycle_type = data.cycle_type if source in("db","remote") else data['cycle_type']
 
         self.orders = self.get_orders_from_remote(
             data.orders['orders']) if source == 'remote' else self.combine_orders()
         self.open_price = self.local_api.get_order_by_ticket(
             self.initial[0]).open_price if len(self.initial) > 0 else 0
+        self.base_threshold_lower = data.base_threshold_lower if source == "db" else self.threshold_lower
+        self.base_threshold_upper = data.base_threshold_upper if source == "db" else self.threshold_upper
         self.buyLots = 0
         self.sellLots = 0
 
@@ -116,6 +117,8 @@ class cycle:
             "remote_id": self.cycle_id,
             "threshold_upper": round(float(self.threshold_upper), 2),
             "threshold_lower": round(float(self.threshold_lower), 2),
+            "base_threshold_lower": round(float(self.base_threshold_lower), 2),
+            "base_threshold_upper": round(float(self.base_threshold_upper), 2),
             "cycle_type": self.cycle_type,
 
 
@@ -368,38 +371,24 @@ class cycle:
                     break
 
     def threshold_Reposition(self, threshold):
-        lowest = self.threshold_lower
-        highest = self.threshold_upper
-        for order_ticket in self.initial:
-            order_data_db = self.local_api.get_order_by_ticket(order_ticket)
-            orderobj = order(order_data_db, self.is_pending,
-                             self.mt5, self.local_api, "db", self.id)
-            if orderobj.type == Mt5.ORDER_TYPE_SELL:
-                lowest = orderobj.open_price - threshold * \
-                    self.mt5.get_pips(self.symbol)
-                highest = orderobj.open_price + self.bot.zones[self.zone_index] * self.mt5.get_pips(
-                    self.symbol)+threshold * self.mt5.get_pips(self.symbol)
-            if orderobj.type == Mt5.ORDER_TYPE_BUY:
-                highest = orderobj.open_price+threshold * \
-                    self.mt5.get_pips(self.symbol)
-                lowest = orderobj.open_price - self.bot.zones[self.zone_index] * self.mt5.get_pips(
-                    self.symbol)-threshold * self.mt5.get_pips(self.symbol)
+        buy_n = 0
+        sell_n = 0
         for order_ticket in self.threshold:
             order_data_db = self.local_api.get_order_by_ticket(order_ticket)
             orderobj = order(order_data_db, self.is_pending,
                              self.mt5, self.local_api, "db", self.id)
             if orderobj.type == Mt5.ORDER_TYPE_SELL:
-                if orderobj.open_price <= lowest:
-                    lowest = orderobj.open_price - threshold * \
-                        self.mt5.get_pips(self.symbol)
+                self.threshold_lower = orderobj.open_price - threshold * \
+                    self.mt5.get_pips(self.symbol)
+                sell_n += 1
             if orderobj.type == Mt5.ORDER_TYPE_BUY:
-                if orderobj.open_price >= highest:
-                    highest = orderobj.open_price+threshold * \
-                        self.mt5.get_pips(self.symbol)
-        if lowest > self.threshold_lower:
-            self.threshold_lower = lowest
-        if highest < self.threshold_upper:
-            self.threshold_upper = highest
+                self.threshold_upper = orderobj.open_price+threshold * \
+                    self.mt5.get_pips(self.symbol)
+                buy_n += 1
+        if sell_n == 0:
+            self.threshold_lower = self.base_threshold_lower
+        if buy_n == 0:
+            self.threshold_upper = self.base_threshold_upper
 
     def close_initial_sell_orders(self):
         total_sells = len(self.initial)

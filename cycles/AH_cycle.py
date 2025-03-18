@@ -49,7 +49,8 @@ class cycle:
         self.cycle_id = data.remote_id if source == "db" else data.id if source == "remote" else ""
         self.is_pending = data.is_pending if source == "db" else False if source == "remote" else data[
             'is_pending']
-        self.cycle_type = data.cycle_type if source == "db" else data['cycle_type']
+        self.cycle_type = data.cycle_type if source in ("db", "remote") else data[
+            'cycle_type']
         self.local_api = AHRepo(engine=engine)
         self.mt5 = mt5
         self.bot = bot
