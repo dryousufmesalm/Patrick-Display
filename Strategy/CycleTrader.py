@@ -222,6 +222,23 @@ class CycleTrader(Strategy):
                 order_obj.close_order()
         except Exception as e:
             self.logger.error(f"Error handling event: {e}")
+            data = {
+                "title":  "Error handling event",
+                "body":     "Error handling event {} for bot {} ({})".format(
+                    e, self.bot.name, self.bot.id),
+                "data":     {
+                    "bot": self.bot.id,
+                    "event": self.event.name,
+                    "message": str(e),
+                    
+                },
+                "bot": self.bot.id,
+                "level": "error",
+                "subject": "test",
+                "group": "test"
+            }
+
+            self.client.send_log(data)
 
     def string_to_array(self, string):
         """

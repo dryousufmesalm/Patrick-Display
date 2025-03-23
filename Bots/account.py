@@ -132,15 +132,26 @@ class Account:
         """ Initialize the bots for the account """
         try:
             bots = self.client.get_account_bots(self.id)
-            for bot in bots:
-                bot = Bot(self.client, self, self.meta_trader, bot.id)
+            for bbot in bots:
+                bot = Bot(self.client, self, self.meta_trader, bbot.id)
                 bot.initialize()
                 await bot.run()  # Run the bot in a background thread
                 self.bots.append(bot)
+                data = {
+                    "title":    bbot.name,
+                    "body":    "Bot {} initialized for account {} with id {}".format(
+                        bbot.name, bot.id, self.id),
+                    "bot": bot.id,
+                    "level": "success",
+
+                }
+
+            self.client.send_log(data)
             return True
         except (ConnectionError, TimeoutError) as e:
             logger.error(
                 f"Failed to initialize bots due to connection issue: {e}")
+            
         except KeyError as e:
             logger.error(f"Failed to initialize bots due to missing key: {e}")
         except ValueError as e:
@@ -169,10 +180,20 @@ class Account:
         message = content["message"]
         try:
             if message == "create_bot":
-                bot = Bot(self.client, self, self.meta_trader, content["id"])
+                bot = Bot(self.client, self,
+                          self.meta_trader, content["id"])
                 if bot.initialize():
                     await bot.run()
                     self.bots.append(bot)
+                    data = {
+                        "title":    bot.name,
+                        "body":    "Bot {} created for account {} with id {}".format(
+                            bot.name, bot.id, self.id),
+                        "bot": bot.id,
+                        "level": "success",
+
+                    }
+                    self.client.send_log(data)
                     self.client.delete_event(event.id)
             elif message == "update_bot":
                 bot_id = content["id"]
@@ -181,6 +202,15 @@ class Account:
                         bot.get_bot_settings()
                         bot.update_configs()
                         self.client.delete_event(event.id)
+                        data = {
+                            "title":    bot.name,
+                            "body":    "Bot {} updated for account {} with id {}".format(
+                                bot.name, bot.id, self.id),
+                            "bot": bot.id,
+                            "level": "success",
+
+                        }
+                        self.client.send_log(data)
                         break
             elif message == "delete_bot":
                 bot_id = content["id"]
@@ -188,6 +218,15 @@ class Account:
                     if bot.id == bot_id:
                         self.bots.remove(bot)
                         self.client.delete_event(event.id)
+                        data = {
+                            "title":    bot.name,
+                            "body":    "Bot {} deleted for account {} with id {}".format(
+                                bot.name, bot.id, self.id),
+                            "bot": bot.id,
+                            "level": "success",
+
+                        }
+                        self.client.send_log(data)
                         break
             else:
                 logger.info(message)

@@ -32,6 +32,7 @@ class order:
         self.local_api = local_api
         self.id = getattr(order_data, 'id', "")
         self.account = self.Mt5.account_id
+        self.source = source
         self.cycle_id = cycle_id
         self.ah_repo = AHRepo(engine=engine)
         self.ct_repo = CTRepo(engine=engine)

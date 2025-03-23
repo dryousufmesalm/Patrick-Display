@@ -24,7 +24,9 @@ class API:
             self.token = user_data.token
             self.user_id = user_data.record.id
             self.authenticated = user_data.is_valid
-            self.user_name = user_data.record.username
+            # The above code is setting the `user_name` attribute of an object to the value of
+            # `user_data.record.username`.
+            # self.user_name = user_data.record.username
             self.user_email = user_data.record.email
             self.is_active = user_data.record.active
             return user_data
@@ -331,4 +333,11 @@ class API:
             return self.client.collection("bots").update(bot_id, data)
         except Exception as e:
             logging.error(f"Failed to set bot as running: {e}")
+            return None
+    def send_log(self, data):
+        """Create a log."""
+        try:
+            return self.client.collection("terminal_logs").create(data)
+        except Exception as e:
+            logging.error(f"Failed to create log: {e}")
             return None

@@ -21,6 +21,7 @@ class Bot:
         self.meta_trader = meta_trader
         self.strategy = None
         self.settings = None
+        self.name = None
 
     def initialize(self):
         """ Initialize the bot """
@@ -98,6 +99,7 @@ class Bot:
         self.settings = bot.settings
         self.symbol_name = bot.bot_configs["symbol"]
         self.symbol = bot.symbol
+        self.name = bot.name
         
         return bot
 

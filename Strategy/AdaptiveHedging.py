@@ -87,7 +87,6 @@ class AdaptiveHedging(Strategy):
             username = content["user_name"]
             sent_by_admin = content["sent_by_admin"]
             user_id = content["user_id"]
-            wait_for_candle_to_close = content["wait_for_candle_to_close"]
             cycle_type = content['type']
             price = content['price']
             # wait_for_candle = content['wait_for_candle_to_close']

@@ -447,11 +447,12 @@ class cycle:
                 order_obj = order(
                     recovery_order[0], False, self.mt5, self.local_api, "mt5", self.id)
                 order_obj.create_order()
-        # update the upper and lower by the zone index
-        self.lower_bound = float(hedge_order[0].price_open) - float(
-            self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
-        self.upper_bound = float(hedge_order[0].price_open) + float(
-            self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
+        if len(hedge_order) > 0:
+            # update the upper and lower by the zone index
+            self.lower_bound = float(hedge_order[0].price_open) - float(
+                self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
+            self.upper_bound = float(hedge_order[0].price_open) + float(
+                self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
 
     def hedge_sell_order(self):
         self.lot_idx = min(self.lot_idx + 1, len(self.bot.lot_sizes) - 1)
@@ -474,11 +475,12 @@ class cycle:
                 order_obj = order(
                     recovery_order[0], False, self.mt5, self.local_api, "mt5", self.id)
                 order_obj.create_order()
-        # update the upper and lower by the zone index
-        self.lower_bound = float(hedge_order[0].price_open) - float(
-            self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
-        self.upper_bound = float(hedge_order[0].price_open) + float(
-            self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
+        if len(hedge_order) > 0:
+            # update the upper and lower by the zone index
+            self.lower_bound = float(hedge_order[0].price_open) - float(
+                self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
+            self.upper_bound = float(hedge_order[0].price_open) + float(
+                self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
 
     def go_opposite_direction(self):
         # check recovery order length
@@ -594,6 +596,7 @@ class cycle:
             },
             "lot_idx": 0,
             "status": "initial",
+            "cycle_type": "BUY & SELL",
             "lower_bound": round(lower_bound, 2),
             "upper_bound": round(upper_bound, 2),
             "is_pending": False,
@@ -608,11 +611,9 @@ class cycle:
             "max_recovery": [],
             "cycle_id": "",
             "zone_index": 0,
-
-
         }
-        New_cycle = cycle(data, self.local_api, self.mt5, self)
-        res = self.bot.create_AH_cycle(New_cycle.to_remote_dict())
+        New_cycle = cycle(data, self.mt5,self.bot, "mt5")
+        res = self.bot.client.create_AH_cycle(New_cycle.to_remote_dict())
         New_cycle.cycle_id = str(res.id)
         New_cycle.create_cycle()
         return New_cycle
