@@ -25,7 +25,7 @@ class AHRepo:
                 AHCycle.remote_id == remote_id)).first()
             return result
 
-    def get_active_cycles(self, account) -> list[AHCycle] | None:
+    def get_active_cycles(self, bot) -> list[AHCycle] | None:
         """
         Retrieve all active cycles for a given account.
 
@@ -33,9 +33,11 @@ class AHRepo:
         :return: A list of active AHCycle objects or None.
         """
         with Session(self.engine) as session:
-            cycles = session.exec(select(AHCycle).where(AHCycle.is_closed == False)).all()
+            cycles = session.exec(select(AHCycle).where(
+                AHCycle.is_closed == False and AHCycle.bot == bot
+            )).all()
             
-            active_cycles = [cycle for cycle in cycles if cycle.account == account ]
+            active_cycles = [cycle for cycle in cycles if cycle.bot == bot ]
             return active_cycles
 
     def get_all_cycles(self) -> list[AHCycle] | None:

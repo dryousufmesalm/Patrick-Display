@@ -5,6 +5,8 @@ import threading
 from DB.db_engine import engine
 from DB.ah_strategy.repositories.ah_repo import AHRepo
 import time
+import asyncio
+from Views.globals.app_logger import app_logger as logger
 
 
 class AdaptiveHedging(Strategy):
@@ -33,6 +35,7 @@ class AdaptiveHedging(Strategy):
         self.local_api = AHRepo(engine=engine)
         self.settings = None
         self.init_settings()
+        self.logger = logger
 
     def init_settings(self):
         """
@@ -310,16 +313,17 @@ class AdaptiveHedging(Strategy):
         New_cycle.create_cycle()
 
     # get all active  cycles
-    def get_all_active_cycles(self):
-        cycles = self.local_api.get_active_cycles(self.bot.account.id)
-        if cycles is None:
-            return []
-        active_cycles = [cycle for cycle in cycles if cycle.account ==
-                         self.bot.account.id and cycle.bot == self.bot.id]
-        return active_cycles
+    async def get_all_active_cycles(self):
+        try:
+            cycles = self.local_api.get_active_cycles(self.bot.id)
+            active_cycles = [
+                cycle for cycle in cycles if cycle.is_closed is False]
+            return active_cycles
+        except Exception as e:
+            self.logger.error(f"Error getting active cycles: {e}")
     # Cycles  Manager
 
-    def run(self):
+    async def run(self):
         """
         This function runs the adaptive hedging strategy.
 
@@ -330,20 +334,34 @@ class AdaptiveHedging(Strategy):
         None
         """
         while True:
+            try:
+                active_cycles = await self.get_all_active_cycles()
+                tasks = []
 
-            active_cycles = self.get_all_active_cycles()
-            for cycle_data in active_cycles:
-                cycle_obj = cycle(cycle_data, self.meta_trader, self, "db")
-                if self.stop is False:
-                    cycle_obj.manage_cycle_orders()
-                cycle_obj.update_cycle(self.client)
-                cycle_obj.close_cycle_on_takeprofit(
-                    self.take_profit, self.client)
-            time.sleep(1)
+                for cycle_data in active_cycles:
+                    cycle_obj = cycle(cycle_data, self.meta_trader, self, "db")
+                    if self.stop is False:
+                        tasks.append(cycle_obj.manage_cycle_orders())
+                    tasks.append(cycle_obj.update_cycle(self.client))
+                    tasks.append(cycle_obj.close_cycle_on_takeprofit(
+                        self.take_profit, self.client))
+
+                await asyncio.gather(*tasks)
+            except Exception as e:
+                self.logger.error(
+                    f"Error running adaptive hedging strategy: {e}")
+            await asyncio.sleep(1)
 
     async def run_in_thread(self):
-        """
-        This function runs the adaptive hedging strategy in a separate thread.
-        """
-        thread = threading.Thread(target=self.run, daemon=True)
-        thread.start()
+        try:
+            def run_coroutine_in_thread(loop, coro):
+                    asyncio.set_event_loop(loop)
+                    loop.run_until_complete(coro)
+
+            loop = asyncio.new_event_loop()
+            thread = threading.Thread(
+                target=run_coroutine_in_thread, args=(loop, self.run()), daemon=True)
+            thread.start()
+            self.logger.info("adaptive hedging strategy running in thread")
+        except Exception as e:
+            self.logger.error(f"Error running in thread: {e}")

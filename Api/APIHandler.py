@@ -2,7 +2,6 @@ from pocketbase import PocketBase
 import threading
 import logging
 
-
 class API:
     """ The base class for all the API handlers"""
 
@@ -15,6 +14,7 @@ class API:
         self.is_active = False
         self.user_id = None
         self.client = PocketBase(self.base_url)
+  
 
     def login(self, username, password):
         """Authenticate with the API using the provided username and password."""
@@ -248,6 +248,7 @@ class API:
             return self.client.collection("adaptive_hedge_cycles").update(cycle_id, data)
         except Exception as e:
             logging.error(f"Failed to update AH cycle by ID: {e}")
+            
             return None
 
     def close_AH_cycle(self, cycle_id):
