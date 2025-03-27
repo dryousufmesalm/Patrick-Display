@@ -332,6 +332,10 @@ class cycle:
                 total_sell = self.count_initial_sell_orders()
                 if total_sell >= 1:
                     self.close_initial_buy_orders()
+                    self.base_threshold_lower = self.open_price-threshold * self.mt5.get_pips(self.symbol)
+                    self.threshold_lower = self.base_threshold_lower
+                    self.base_threshold_upper = self.upper_bound+threshold * self.mt5.get_pips(self.symbol)
+                    self.threshold_upper = self.base_threshold_upper
                     self.hedge_sell_order()
                     self.status = "recovery"
                     self.update_CT_cycle()
@@ -339,6 +343,10 @@ class cycle:
                 total_buy = self.count_initial_buy_orders()
                 if total_buy >= 1:
                     self.close_initial_sell_orders()
+                    self.base_threshold_lower = self.lower_bound-threshold * self.mt5.get_pips(self.symbol)
+                    self.threshold_lower = self.base_threshold_lower
+                    self.base_threshold_upper = self.open_price+threshold * self.mt5.get_pips(self.symbol)
+                    self.threshold_upper = self.base_threshold_upper
                     self.hedge_buy_order()
                     self.status = "recovery"
                     self.update_CT_cycle()
@@ -386,6 +394,7 @@ class cycle:
                     self.mt5.get_pips(self.symbol)
                 buy_n += 1
         if sell_n == 0:
+            
             self.threshold_lower = self.base_threshold_lower
         if buy_n == 0:
             self.threshold_upper = self.base_threshold_upper
