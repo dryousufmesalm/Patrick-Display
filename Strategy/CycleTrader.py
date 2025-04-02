@@ -384,8 +384,8 @@ class CycleTrader(Strategy):
                 ask = self.meta_trader.get_ask(self.symbol)
                 bid = self.meta_trader.get_bid(self.symbol)
                 pips = self.meta_trader.get_pips(self.symbol)
-                up_price = bid+self.autotrade_pips_restriction*pips
-                down_price = bid-self.autotrade_pips_restriction*pips
+                up_price = bid+self.autotrade_threshold/2*pips
+                down_price = bid-self.autotrade_threshold/2*pips
                 tasks = []
                 for cycle_data in active_cycles:
                     cycle_obj = cycle(cycle_data, self.meta_trader, self, "db")
