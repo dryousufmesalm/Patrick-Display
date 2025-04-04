@@ -35,7 +35,7 @@ class CycleTrader(Strategy):
         self.max_cycles = 1
         self.local_api = CTRepo(engine=engine)
         self.settings = None
-        self.last_cycle_price = None
+        self.last_cycle_price = self.meta_trader.get_ask(self.symbol)
         self.logger = logger
         self.hedges_numbers = None
         self.ADD_All_to_PNL = True
@@ -230,7 +230,7 @@ class CycleTrader(Strategy):
                     "bot": self.bot.id,
                     "event": self.event.name,
                     "message": str(e),
-                    
+
                 },
                 "bot": self.bot.id,
                 "level": "error",
@@ -384,8 +384,8 @@ class CycleTrader(Strategy):
                 ask = self.meta_trader.get_ask(self.symbol)
                 bid = self.meta_trader.get_bid(self.symbol)
                 pips = self.meta_trader.get_pips(self.symbol)
-                up_price = bid+self.autotrade_threshold/2*pips
-                down_price = bid-self.autotrade_threshold/2*pips
+                up_price = bid+(self.autotrade_threshold/2)*pips
+                down_price = bid-(self.autotrade_threshold/2)*pips
                 tasks = []
                 for cycle_data in active_cycles:
                     cycle_obj = cycle(cycle_data, self.meta_trader, self, "db")
