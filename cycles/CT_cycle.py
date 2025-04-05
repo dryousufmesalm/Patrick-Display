@@ -320,7 +320,7 @@ class cycle:
 
         return True
 
-    async def manage_cycle_orders(self, threshold):
+    async def manage_cycle_orders(self, threshold, threshold2):
         if self.is_pending:
             return
         if self.is_closed:
@@ -356,13 +356,13 @@ class cycle:
             self.go_hedge_direction()
 
         # add new order every x pips
-        self.threshold_Reposition(threshold)
+        self.threshold_Reposition(threshold2)
         if ask >= self.threshold_upper and len(self.hedge) > 0:
             self.threshold_buy_order(
-                self.threshold_upper+threshold * self.mt5.get_pips(self.symbol))
+                self.threshold_upper+threshold2 * self.mt5.get_pips(self.symbol))
         elif bid <= self.threshold_lower and len(self.hedge) > 0:
             self.threshold_sell_order(
-                self.threshold_lower - threshold * self.mt5.get_pips(self.symbol))
+                self.threshold_lower - threshold2 * self.mt5.get_pips(self.symbol))
 
     def close_initial_buy_orders(self):
         total_initial = len(self.initial)

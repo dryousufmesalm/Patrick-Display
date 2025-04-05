@@ -29,6 +29,7 @@ class CycleTrader(Strategy):
         self.take_profit = 5
         self.zones = 500
         self.zone_forward = 1
+        self.zone_forward2 = 1
         self.stop = False
         self.autotrade = False
         self.autotrade_threshold = 0
@@ -56,6 +57,7 @@ class CycleTrader(Strategy):
         self.take_profit = self.config["take_profit"]
         self.zones = self.string_to_array(self.config['zone_array'])
         self.zone_forward = self.config["zone_forward"]
+        self.zone_forward2 = self.config["zone_forward2"]
         self.symbol = self.config['symbol']
         self.max_cycles = self.config["max_cycles"]
         self.autotrade = self.config["autotrade"]
@@ -271,9 +273,9 @@ class CycleTrader(Strategy):
             upper_bound = float(order1[0].price_open) + float(
                 self.zones[0]) * float(self.meta_trader.get_pips(self.symbol))
             upper_threshold = float(upper_bound) + float(
-                self.zone_forward * float(self.meta_trader.get_pips(self.symbol)))
+                self.zone_forward2 * float(self.meta_trader.get_pips(self.symbol)))
             lower_threshold = float(lower_bound) - float(
-                self.zone_forward * float(self.meta_trader.get_pips(self.symbol)))
+                self.zone_forward2 * float(self.meta_trader.get_pips(self.symbol)))
             data = {
                 "account": self.bot.account.id,
                 "bot": self.bot.id,
@@ -395,7 +397,7 @@ class CycleTrader(Strategy):
                                 New_cycles_Restrition = True
                     if not self.stop:
                         tasks.append(cycle_obj.manage_cycle_orders(
-                            self.zone_forward))
+                            self.zone_forward, self.zone_forward2))
                     tasks.append(cycle_obj.update_cycle(self.client))
                     tasks.append(cycle_obj.close_cycle_on_takeprofit(
                         self.take_profit, self.client))
