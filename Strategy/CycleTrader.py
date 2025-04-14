@@ -49,27 +49,42 @@ class CycleTrader(Strategy):
 
     def init_settings(self):
         """ Initialize the settings for the CycleTrader strategy """
-        self.enable_recovery = self.config["enable_recovery"]
-        self.lot_sizes = self.string_to_array(self.config["lot_sizes"])
-        self.pips_step = self.config["pips_step"]
-        self.slippage = self.config["slippage"]
-        self.sltp = self.config["sltp"]
-        self.take_profit = self.config["take_profit"]
-        self.zones = self.string_to_array(self.config['zone_array'])
-        self.zone_forward = self.config["zone_forward"]
-        self.zone_forward2 = self.config["zone_forward2"]
-        self.symbol = self.config['symbol']
-        self.max_cycles = self.config["max_cycles"]
-        self.autotrade = self.config["autotrade"]
-        self.autotrade_threshold = self.config["autotrade_threshold"]
-        self.hedges_numbers = self.config["hedges_numbers"]
-        self.ADD_All_to_PNL = self.config["buy_and_sell_add_to_pnl"]
-        self.autotrade_pips_restriction = self.config["autotrade_pips_restriction"]
-        if self.settings and hasattr(self.settings, 'stopped'):
-            self.stop = self.settings.stopped
-        else:
-            self.stop = False
-        self.last_cycle_price = self.meta_trader.get_ask(self.symbol)
+        try:
+            self.enable_recovery = self.config.get("enable_recovery", False)
+            self.lot_sizes = self.string_to_array(
+                self.config.get("lot_sizes", "0.01"))
+            self.pips_step = self.config.get("pips_step", 0)
+            self.slippage = self.config.get("slippage", 3)
+            self.sltp = self.config.get("sltp", "money")
+            self.take_profit = self.config.get("take_profit", 5)
+            self.zones = self.string_to_array(
+                self.config.get('zone_array', "500"))
+            self.zone_forward = self.config.get("zone_forward", 1)
+            self.zone_forward2 = self.config.get("zone_forward2", 1)
+            self.symbol = self.config.get('symbol', self.symbol)
+            self.max_cycles = self.config.get("max_cycles", 1)
+            self.autotrade = self.config.get("autotrade", False)
+            self.autotrade_threshold = self.config.get(
+                "autotrade_threshold", 0)
+            self.hedges_numbers = self.config.get("hedges_numbers", 0)
+            self.ADD_All_to_PNL = self.config.get(
+                "buy_and_sell_add_to_pnl", True)
+            self.autotrade_pips_restriction = self.config.get(
+                "autotrade_pips_restriction", 100)
+
+            if self.settings and hasattr(self.settings, 'stopped'):
+                self.stop = self.settings.stopped
+            else:
+                self.stop = False
+
+            self.last_cycle_price = self.meta_trader.get_ask(self.symbol)
+            logger.info(
+                f"CycleTrader settings initialized for {self.symbol} with zone_forward2={self.zone_forward2}")
+        except Exception as e:
+            logger.error(f"Error initializing CycleTrader settings: {e}")
+            # Set default values for critical parameters
+            if not hasattr(self, 'zone_forward2') or self.zone_forward2 is None:
+                self.zone_forward2 = 1
 
     def update_configs(self, config, settings):
         """
@@ -81,9 +96,19 @@ class CycleTrader(Strategy):
         Returns:
         None
         """
-        self.config = config
-        self.settings = settings
-        self.init_settings()
+        try:
+            if config is not None:
+                self.config = config
+            if settings is not None:
+                self.settings = settings
+
+            self.init_settings()
+            logger.info(f"CycleTrader configs updated for {self.symbol}")
+        except Exception as e:
+            logger.error(f"Error updating CycleTrader configs: {e}")
+            # Ensure critical parameters have default values if update fails
+            if not hasattr(self, 'zone_forward2') or self.zone_forward2 is None:
+                self.zone_forward2 = 1
 
     async def handle_event(self, event):
         """
@@ -358,7 +383,8 @@ class CycleTrader(Strategy):
                 down_price = self.last_cycle_price-self.autotrade_threshold*pips
                 if ask >= up_price or bid <= down_price:
                     self.last_cycle_price = ask if ask >= up_price else bid if bid <= down_price else 0
-                    if self.autotrade and cycles_Restrition == False:
+                    # Check if autotrade is enabled AND either restrictions are disabled (value = 0) OR passed the check
+                    if self.autotrade and (self.autotrade_pips_restriction == 0 or cycles_Restrition == False):
                         if self.stop is False:
                             order1 = self.meta_trader.buy(
                                 self.symbol, self.lot_sizes[0], self.bot.magic, 0, 0, "PIPS", self.slippage, "initial")
@@ -383,18 +409,26 @@ class CycleTrader(Strategy):
             try:
                 active_cycles = await self.get_all_active_cycles()
                 New_cycles_Restrition = False
-                ask = self.meta_trader.get_ask(self.symbol)
-                bid = self.meta_trader.get_bid(self.symbol)
-                pips = self.meta_trader.get_pips(self.symbol)
-                up_price = bid+(self.autotrade_threshold/2)*pips
-                down_price = bid-(self.autotrade_threshold/2)*pips
+
+                # Only calculate restrictions if autotrade_pips_restriction is not 0
+                if self.autotrade_pips_restriction != 0:
+                    ask = self.meta_trader.get_ask(self.symbol)
+                    bid = self.meta_trader.get_bid(self.symbol)
+                    pips = self.meta_trader.get_pips(self.symbol)
+                    up_price = bid+(self.autotrade_pips_restriction/2)*pips
+                    down_price = bid-(self.autotrade_pips_restriction/2)*pips
+
+                    for cycle_data in active_cycles:
+                        cycle_obj = cycle(
+                            cycle_data, self.meta_trader, self, "db")
+                        if len(cycle_obj.orders) <= 2 and len(cycle_obj.closed) == 0 and len(cycle_obj.hedge) == 0:
+                            if cycle_obj.open_price > 0:
+                                if cycle_obj.open_price > down_price and cycle_obj.open_price < up_price:
+                                    New_cycles_Restrition = True
+
                 tasks = []
                 for cycle_data in active_cycles:
                     cycle_obj = cycle(cycle_data, self.meta_trader, self, "db")
-                    if len(cycle_obj.orders) <= 2 and len(cycle_obj.closed) == 0 and len(cycle_obj.hedge) == 0:
-                        if cycle_obj.open_price > 0:
-                            if cycle_obj.open_price > down_price and cycle_obj.open_price < up_price:
-                                New_cycles_Restrition = True
                     if not self.stop:
                         tasks.append(cycle_obj.manage_cycle_orders(
                             self.zone_forward, self.zone_forward2))

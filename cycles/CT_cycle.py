@@ -4,92 +4,147 @@ import MetaTrader5 as Mt5
 from DB.db_engine import engine
 from DB.ct_strategy.repositories.ct_repo import CTRepo
 from types import SimpleNamespace
+import json
 
 
 class cycle:
     def __init__(self, data, mt5, bot, source=None):
-        self.bot_id = data.bot if source in ("db", "remote") else data["bot"]
-        self.initial = data.initial if source == "db" else [
-        ] if source == "remote" else data["initial"]
-        self.hedge = data.hedge if source == "db" else [
-        ] if source == "remote" else data["hedge"]
-        self.recovery = data.recovery if source == "db" else [
-        ] if source == "remote" else data["recovery"]
-        self.pending = data.pending if source == "db" else [
-        ] if source == "remote" else data["pending"]
-        self.closed = data.closed if source == "db" else [
-        ] if source == "remote" else data["closed"]
-        self.threshold = data.threshold if source == "db" else [
-        ] if source == "remote" else data["threshold"]
-        self.is_closed = data.is_closed if source in (
-            "db", "remote") else data['is_closed']
-        self.lower_bound = data.lower_bound if source in (
-            "db", "remote") else data['lower_bound']
-        self.upper_bound = data.upper_bound if source in (
-            "db", "remote") else data['upper_bound']
-        self.lot_idx = data.lot_idx if source in (
-            "db", "remote") else data['lot_idx']
-        self.zone_index = data.zone_index if source == "db" else 0 if source == "remote" else data[
-            'zone_index']
-        self.status = data.status if source in (
-            "db", "remote") else data['status']
-        self.symbol = data.symbol if source in (
-            "db", "remote") else data['symbol']
-        self.total_profit = data.total_profit if source in (
-            "db", "remote") else data['total_profit']
-        self.total_volume = data.total_volume if source in (
-            "db", "remote") else data['total_volume']
-        self.closing_method = data.closing_method if source in (
-            "db", "remote") else data['closing_method']
-        self.opened_by = data.opened_by if source in (
-            "db", "remote") else data['opened_by']
-        self.account = data.account if source in (
-            "db", "remote") else data['account']
-        self.id = data.id if source == "db" else ""
-        self.cycle_id = data.remote_id if source == "db" else data.id if source == "remote" else ""
-        self.is_pending = data.is_pending if source == "db" else False if source == "remote" else data[
-            'is_pending']
+        if data is None:
+            raise ValueError("Cannot initialize CTcycle with None data")
+
+        # Helper function to safely get attributes
+        def safe_get(obj, attr, default=None):
+            if source == "db":
+                value = getattr(obj, attr, default)
+            elif source == "remote":
+                value = getattr(obj, attr, default)
+            else:
+                value = obj.get(attr, default)
+
+            # Special handling for done_price_levels to ensure it's always a list
+            if attr == "done_price_levels":
+                # If it's a dictionary (from PocketBase), convert to empty list
+                if isinstance(value, dict):
+                    return []
+                # If it's a JSON string, parse it
+                elif isinstance(value, str):
+                    try:
+                        parsed = json.loads(value)
+                        return [] if isinstance(parsed, dict) else parsed
+                    except:
+                        return []
+                # Make sure it's a list
+                elif value is None:
+                    return []
+
+            return value
+
+        self.bot_id = safe_get(data, "bot", "")
+        self.initial = safe_get(data, "initial", [])
+        self.hedge = safe_get(data, "hedge", [])
+        self.recovery = safe_get(data, "recovery", [])
+        self.pending = safe_get(data, "pending", [])
+        self.closed = safe_get(data, "closed", [])
+        self.threshold = safe_get(data, "threshold", [])
+        self.is_closed = safe_get(data, "is_closed", False)
+        self.lower_bound = safe_get(data, "lower_bound", 0)
+        self.upper_bound = safe_get(data, "upper_bound", 0)
+        self.lot_idx = safe_get(data, "lot_idx", 0)
+        self.zone_index = safe_get(data, "zone_index", 0)
+        self.status = safe_get(data, "status", "")
+        self.symbol = safe_get(data, "symbol", "")
+        self.total_profit = safe_get(data, "total_profit", 0)
+        self.total_volume = safe_get(data, "total_volume", 0)
+        self.closing_method = safe_get(data, "closing_method", {})
+        self.opened_by = safe_get(data, "opened_by", {})
+        self.account = safe_get(data, "account", "")
+
+        # Handle IDs safely
+        self.id = safe_get(data, "id", "")
+        self.cycle_id = safe_get(
+            data, "remote_id", "") if source == "db" else safe_get(data, "id", "")
+        self.is_pending = safe_get(data, "is_pending", False)
+
         self.local_api = CTRepo(engine=engine)
         self.mt5 = mt5
         self.bot = bot
-        self.threshold_upper = data.threshold_upper if source == "db" else data.threshold_top if source == "remote" else data["threshold_upper"]
-        self.threshold_lower = data.threshold_lower if source == "db" else data.threshold_bottom if source == "remote" else data[
-            "threshold_lower"]
-        self.cycle_type = data.cycle_type if source in("db","remote") else data['cycle_type']
 
-        self.orders = self.get_orders_from_remote(
-            data.orders['orders']) if source == 'remote' else self.combine_orders()
-        self.open_price = self.local_api.get_order_by_ticket(
-            self.initial[0]).open_price if len(self.initial) > 0 else 0
-        self.base_threshold_lower = data.base_threshold_lower if source == "db" else self.threshold_lower
-        self.base_threshold_upper = data.base_threshold_upper if source == "db" else self.threshold_upper
+        self.threshold_upper = safe_get(
+            data, "threshold_upper", 0) if source == "db" else safe_get(data, "threshold_top", 0)
+        self.threshold_lower = safe_get(
+            data, "threshold_lower", 0) if source == "db" else safe_get(data, "threshold_bottom", 0)
+        self.cycle_type = safe_get(data, "cycle_type", "")
+
+        # Safely handle orders
+        if source == 'remote':
+            orders_data = safe_get(data, "orders", {})
+            if isinstance(orders_data, dict):
+                orders_list = orders_data.get("orders", [])
+                self.orders = self.get_orders_from_remote(orders_list)
+            else:
+                self.orders = []
+        else:
+            self.orders = self.combine_orders()
+
+        # Calculate open price safely
+        self.open_price = 0
+        if len(self.initial) > 0:
+            initial_order = self.local_api.get_order_by_ticket(self.initial[0])
+            if initial_order:
+                self.open_price = initial_order.open_price
+
+        self.base_threshold_lower = safe_get(
+            data, "base_threshold_lower", self.threshold_lower)
+        self.base_threshold_upper = safe_get(
+            data, "base_threshold_upper", self.threshold_upper)
         self.buyLots = 0
         self.sellLots = 0
+
+        # New fields for zone forward threshold order system
+        self.done_price_levels = safe_get(data, "done_price_levels", [])
+        self.current_direction = safe_get(data, "current_direction", "BUY")
+        self.initial_threshold_price = safe_get(
+            data, "initial_threshold_price", self.open_price)
+        self.direction_switched = safe_get(data, "direction_switched", False)
+        self.next_order_index = safe_get(data, "next_order_index", 0)
 
     def combine_orders(self):
         return self.initial + self.hedge + self.pending + self.recovery + self.threshold
 
     def get_orders_from_remote(self, orders):
-        for order_data in orders:
-            # convet orderdata to subscrible
+        if orders is None:
+            return []
 
-            order_obj = order(SimpleNamespace(order_data),
-                              self.is_pending, self.mt5, self.local_api, "db")
-            order_obj.create_order()
-            # add the order to the orders list
-            order_kind = order_obj.kind
-            order_ticket = order_obj.ticket
-            if order_kind == "initial":
-                self.remove_initial_order(order_ticket)
-            elif order_kind == "hedge":
-                self.remove_hedge_order(order_ticket)
-            elif order_kind == "recovery":
-                self.remove_recovery_order(order_ticket)
-            elif order_kind == "pending":
-                self.remove_pending_order(order_ticket)
-            elif order_kind == "threshold":
-                self.remove_threshold_order(order_ticket)
-    # create cycle data
+        result = []
+        for order_data in orders:
+            try:
+                if order_data is None:
+                    continue
+
+                # Convert order data to subscriptable object
+                order_obj = order(SimpleNamespace(order_data),
+                                  self.is_pending, self.mt5, self.local_api, "db")
+                order_obj.create_order()
+
+                # Add the order to the appropriate list based on its kind
+                order_kind = order_obj.kind
+                order_ticket = order_obj.ticket
+                result.append(order_ticket)
+
+                if order_kind == "initial":
+                    self.remove_initial_order(order_ticket)
+                elif order_kind == "hedge":
+                    self.remove_hedge_order(order_ticket)
+                elif order_kind == "recovery":
+                    self.remove_recovery_order(order_ticket)
+                elif order_kind == "pending":
+                    self.remove_pending_order(order_ticket)
+                elif order_kind == "threshold":
+                    self.remove_threshold_order(order_ticket)
+            except Exception as e:
+                print(f"Error processing order from remote: {e}")
+
+        return result
 
     def to_dict(self):
         data = {
@@ -120,8 +175,12 @@ class cycle:
             "base_threshold_lower": round(float(self.base_threshold_lower), 2),
             "base_threshold_upper": round(float(self.base_threshold_upper), 2),
             "cycle_type": self.cycle_type,
-
-
+            # New fields for zone forward
+            "done_price_levels": self.done_price_levels,
+            "current_direction": self.current_direction,
+            "initial_threshold_price": self.initial_threshold_price,
+            "direction_switched": self.direction_switched,
+            "next_order_index": self.next_order_index
 
         }
 
@@ -148,7 +207,13 @@ class cycle:
             "opened_by": self.opened_by,
             "cycle_type": self.cycle_type,
             "threshold_top": round(float(self.threshold_upper), 2),
-            "threshold_bottom": round(float(self.threshold_lower), 2)
+            "threshold_bottom": round(float(self.threshold_lower), 2),
+            # New fields for zone forward
+            "done_price_levels": self.done_price_levels,
+            "current_direction": self.current_direction,
+            "initial_threshold_price": self.initial_threshold_price,
+            "direction_switched": self.direction_switched,
+            "next_order_index": self.next_order_index
 
         }
         #  go through the orders and add them to the data
@@ -234,6 +299,12 @@ class cycle:
                 # check if order is already closed
                 if order_data.is_closed:
                     if order_ticket not in self.closed:
+                        # Check if order was closed with a loss, if so mark the price level as "done"
+                        if order_data.profit < 0:
+                            direction = "BUY" if order_data.type == Mt5.ORDER_TYPE_BUY else "SELL"
+                            self.mark_price_level_as_done(
+                                order_data.open_price, direction)
+
                         self.closed.append(order_ticket)
                     order_kind = order_data.kind
                     if order_kind == "initial":
@@ -325,16 +396,31 @@ class cycle:
             return
         if self.is_closed:
             return
+
+        # Store initial price as threshold price if not set
+        if self.initial_threshold_price == 0 and len(self.initial) > 0:
+            order_data = self.local_api.get_order_by_ticket(self.initial[0])
+            if order_data:
+                self.initial_threshold_price = order_data.open_price
+                self.update_CT_cycle()
+
+        # Check for direction switch based on lost orders
+        self.check_direction_switch()
+
         ask = self.mt5.get_ask(self.symbol)
         bid = self.mt5.get_bid(self.symbol)
+
+        # Original cycle management logic for initial status
         if self.status == "initial":
             if ask > self.upper_bound:
                 total_sell = self.count_initial_sell_orders()
                 if total_sell >= 1:
                     self.close_initial_buy_orders()
-                    self.base_threshold_lower = self.open_price-threshold * self.mt5.get_pips(self.symbol)
+                    self.base_threshold_lower = self.open_price - \
+                        threshold * self.mt5.get_pips(self.symbol)
                     self.threshold_lower = self.base_threshold_lower
-                    self.base_threshold_upper = self.upper_bound+threshold * self.mt5.get_pips(self.symbol)
+                    self.base_threshold_upper = self.upper_bound + \
+                        threshold * self.mt5.get_pips(self.symbol)
                     self.threshold_upper = self.base_threshold_upper
                     self.hedge_sell_order()
                     self.status = "recovery"
@@ -343,26 +429,49 @@ class cycle:
                 total_buy = self.count_initial_buy_orders()
                 if total_buy >= 1:
                     self.close_initial_sell_orders()
-                    self.base_threshold_lower = self.lower_bound-threshold * self.mt5.get_pips(self.symbol)
+                    self.base_threshold_lower = self.lower_bound - \
+                        threshold * self.mt5.get_pips(self.symbol)
                     self.threshold_lower = self.base_threshold_lower
-                    self.base_threshold_upper = self.open_price+threshold * self.mt5.get_pips(self.symbol)
+                    self.base_threshold_upper = self.open_price + \
+                        threshold * self.mt5.get_pips(self.symbol)
                     self.threshold_upper = self.base_threshold_upper
                     self.hedge_buy_order()
                     self.status = "recovery"
                     self.update_CT_cycle()
         elif self.status in ["recovery", "max_recovery"]:
-            # if not self.bot.disable_new_cycle_recovery:
-            #     self.go_opposite_direction()
             self.go_hedge_direction()
 
-        # add new order every x pips
+        # Zone forward threshold ordering logic
+        if self.current_direction == "BUY":
+            # When in BUY mode, check if we should place a new buy order at threshold upper
+            if ask >= self.threshold_upper and len(self.hedge) > 0:
+                next_price_level = self.threshold_upper + \
+                    threshold2 * self.mt5.get_pips(self.symbol)
+
+                # Only place the order if this price level hasn't been marked as "done"
+                if not self.should_skip_price_level(next_price_level, "BUY"):
+                    lot_size_index = min(self.next_order_index, len(
+                        self.bot.lot_sizes) - 1) if hasattr(self.bot, 'lot_sizes') else 0
+                    self.threshold_buy_order(next_price_level, lot_size_index)
+                    self.next_order_index = min(self.next_order_index + 1, len(
+                        self.bot.lot_sizes) - 1) if hasattr(self.bot, 'lot_sizes') else 0
+
+        elif self.current_direction == "SELL":
+            # When in SELL mode, check if we should place a new sell order at threshold lower
+            if bid <= self.threshold_lower and len(self.hedge) > 0:
+                next_price_level = self.threshold_lower - \
+                    threshold2 * self.mt5.get_pips(self.symbol)
+
+                # Only place the order if this price level hasn't been marked as "done"
+                if not self.should_skip_price_level(next_price_level, "SELL"):
+                    lot_size_index = min(self.next_order_index, len(
+                        self.bot.lot_sizes) - 1) if hasattr(self.bot, 'lot_sizes') else 0
+                    self.threshold_sell_order(next_price_level, lot_size_index)
+                    self.next_order_index = min(self.next_order_index + 1, len(
+                        self.bot.lot_sizes) - 1) if hasattr(self.bot, 'lot_sizes') else 0
+
+        # Reposition thresholds based on existing orders
         self.threshold_Reposition(threshold2)
-        if ask >= self.threshold_upper and len(self.hedge) > 0:
-            self.threshold_buy_order(
-                self.threshold_upper+threshold2 * self.mt5.get_pips(self.symbol))
-        elif bid <= self.threshold_lower and len(self.hedge) > 0:
-            self.threshold_sell_order(
-                self.threshold_lower - threshold2 * self.mt5.get_pips(self.symbol))
 
     def close_initial_buy_orders(self):
         total_initial = len(self.initial)
@@ -394,7 +503,7 @@ class cycle:
                     self.mt5.get_pips(self.symbol)
                 buy_n += 1
         if sell_n == 0:
-            
+
             self.threshold_lower = self.base_threshold_lower
         if buy_n == 0:
             self.threshold_upper = self.base_threshold_upper
@@ -475,12 +584,15 @@ class cycle:
 
         # update the upper and lower by the zone index
 
-    def threshold_buy_order(self, threshold):
-        self.lot_idx = 0
+    def threshold_buy_order(self, threshold, lot_index=0):
+        lot_idx = lot_index if hasattr(self.bot, 'lot_sizes') else 0
+        lot_size = self.bot.lot_sizes[lot_idx] if hasattr(
+            self.bot, 'lot_sizes') and lot_idx < len(self.bot.lot_sizes) else self.bot.lot_sizes[0]
+
         threshold_order = self.mt5.buy(
-            self.symbol, self.bot.lot_sizes[self.lot_idx], self.bot.bot.magic, self.bot.hedges_numbers, 0, "PIPS", self.bot.slippage, "threshold")
+            self.symbol, lot_size, self.bot.bot.magic, self.bot.hedges_numbers, 0, "PIPS", self.bot.slippage, "threshold")
         if len(threshold_order) > 0:
-            # add the order to the hedge list
+            # add the order to the threshold list
             self.threshold_upper = threshold
             self.threshold.append(threshold_order[0].ticket)
             # create a new order
@@ -488,12 +600,15 @@ class cycle:
                 threshold_order[0], False, self.mt5, self.local_api, "mt5", self.id)
             order_obj.create_order()
 
-    def threshold_sell_order(self, threshold):
-        self.lot_idx = 0
+    def threshold_sell_order(self, threshold, lot_index=0):
+        lot_idx = lot_index if hasattr(self.bot, 'lot_sizes') else 0
+        lot_size = self.bot.lot_sizes[lot_idx] if hasattr(
+            self.bot, 'lot_sizes') and lot_idx < len(self.bot.lot_sizes) else self.bot.lot_sizes[0]
+
         threshold_order = self.mt5.sell(
-            self.symbol, self.bot.lot_sizes[self.lot_idx], self.bot.bot.magic, self.bot.hedges_numbers, 0, "PIPS", self.bot.slippage, "threshold")
+            self.symbol, lot_size, self.bot.bot.magic, self.bot.hedges_numbers, 0, "PIPS", self.bot.slippage, "threshold")
         if len(threshold_order) > 0:
-            # add the order to the hedge list
+            # add the order to the threshold list
             self.threshold_lower = threshold
             self.threshold.append(threshold_order[0].ticket)
             # create a new order
@@ -619,3 +734,84 @@ class cycle:
             self.close_cycle(False, 0, "MetaTrader5")
             remote_api.update_CT_cycle_by_id(
                 self.cycle_id, self.to_remote_dict())
+
+    # New methods for zone forward threshold order system
+    def mark_price_level_as_done(self, price_level, direction):
+        """Mark a price level as done (where an order was lost)"""
+        done_level = {
+            "price": price_level,
+            "direction": direction
+        }
+
+        # Check if this price level is already marked as done
+        for level in self.done_price_levels:
+            if abs(level["price"] - price_level) < self.mt5.get_pips(self.symbol) * 0.5 and level["direction"] == direction:
+                return
+
+        self.done_price_levels.append(done_level)
+        self.update_CT_cycle()
+
+    def should_skip_price_level(self, price_level, direction):
+        """Check if a price level should be skipped because it's marked as done"""
+        for done_level in self.done_price_levels:
+            price_diff = abs(done_level["price"] - price_level)
+            min_diff = self.mt5.get_pips(
+                self.symbol) * 0.5  # Half pip tolerance
+
+            if price_diff <= min_diff and done_level["direction"] == direction:
+                return True
+
+        return False
+
+    def check_direction_switch(self, significant_drop_pips=200):
+        """Check if direction should be switched from BUY to SELL or vice versa"""
+        if self.is_closed:
+            return
+
+        # Check if all buy orders are lost when in BUY mode
+        if self.current_direction == "BUY":
+            all_buy_orders_lost = True
+            for order_id in self.initial + self.hedge + self.threshold:
+                order_data = self.local_api.get_order_by_ticket(order_id)
+                if order_data and order_data.type == Mt5.ORDER_TYPE_BUY and not order_data.is_closed:
+                    all_buy_orders_lost = False
+                    break
+
+            if all_buy_orders_lost:
+                # Get current price
+                current_price = self.mt5.get_bid(self.symbol)
+                # If price dropped significantly below initial price
+                significant_drop = significant_drop_pips * \
+                    self.mt5.get_pips(self.symbol)
+
+                if self.initial_threshold_price > 0 and current_price < (self.initial_threshold_price - significant_drop):
+                    self.current_direction = "SELL"
+                    self.direction_switched = True
+                    # Continue with next lot size index
+                    if hasattr(self.bot, 'lot_sizes') and self.next_order_index < len(self.bot.lot_sizes) - 1:
+                        self.next_order_index += 1
+                    self.update_CT_cycle()
+
+        # Check if all sell orders are lost when in SELL mode
+        elif self.current_direction == "SELL":
+            all_sell_orders_lost = True
+            for order_id in self.initial + self.hedge + self.threshold:
+                order_data = self.local_api.get_order_by_ticket(order_id)
+                if order_data and order_data.type == Mt5.ORDER_TYPE_SELL and not order_data.is_closed:
+                    all_sell_orders_lost = False
+                    break
+
+            if all_sell_orders_lost:
+                # Get current price
+                current_price = self.mt5.get_ask(self.symbol)
+                # If price rose significantly above initial price
+                significant_rise = significant_drop_pips * \
+                    self.mt5.get_pips(self.symbol)
+
+                if self.initial_threshold_price > 0 and current_price > (self.initial_threshold_price + significant_rise):
+                    self.current_direction = "BUY"
+                    self.direction_switched = True
+                    # Continue with next lot size index
+                    if hasattr(self.bot, 'lot_sizes') and self.next_order_index < len(self.bot.lot_sizes) - 1:
+                        self.next_order_index += 1
+                    self.update_CT_cycle()

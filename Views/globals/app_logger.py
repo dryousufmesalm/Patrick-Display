@@ -20,6 +20,21 @@ formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 file_handler.setFormatter(formatter)
 console_handler.setFormatter(formatter)
 
+# Define a filter to exclude sync_CT_cycles logs
+
+
+class SyncCTCyclesFilter(logging.Filter):
+    def filter(self, record):
+        if "sync_CT_cycles" in record.getMessage():
+            return False
+        return True
+
+
+# Add filter to both handlers
+filter = SyncCTCyclesFilter()
+file_handler.addFilter(filter)
+console_handler.addFilter(filter)
+
 # Add handlers to the logger
 app_logger.addHandler(file_handler)
 app_logger.addHandler(console_handler)

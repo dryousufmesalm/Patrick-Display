@@ -1,4 +1,3 @@
-
 from sqlmodel import Field, SQLModel, Relationship
 from typing import TYPE_CHECKING, Dict, List
 if TYPE_CHECKING:
@@ -36,6 +35,12 @@ class CTCycle(SQLModel, table=True):
     recovery: List[int] = Field(default_factory=list, sa_column=Column(JSON))
     threshold: List[int] = Field(default_factory=list, sa_column=Column(JSON))
     cycle_type: str | None
+    done_price_levels: List[Dict] = Field(
+        default_factory=list, sa_column=Column(JSON))
+    current_direction: str = Field(default="BUY")
+    initial_threshold_price: float = Field(default=0.0)
+    direction_switched: bool = Field(default=False)
+    next_order_index: int = Field(default=0)
 
     class Config:
         arbitrary_types_allowed = True

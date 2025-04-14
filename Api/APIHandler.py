@@ -2,6 +2,7 @@ from pocketbase import PocketBase
 import threading
 import logging
 
+
 class API:
     """ The base class for all the API handlers"""
 
@@ -14,7 +15,6 @@ class API:
         self.is_active = False
         self.user_id = None
         self.client = PocketBase(self.base_url)
-  
 
     def login(self, username, password):
         """Authenticate with the API using the provided username and password."""
@@ -171,6 +171,7 @@ class API:
         except Exception as e:
             logging.error(f"Failed to get symbol by ID: {e}")
             return None
+
     def get_symbols_by_account(self, account):
         """Get a symbol by its name."""
         try:
@@ -178,6 +179,7 @@ class API:
         except Exception as e:
             logging.error(f"Failed to get symbol: {e}")
             return None
+
     def get_symbol(self, account_id):
         """Get a symbol by its name."""
         try:
@@ -193,6 +195,7 @@ class API:
         except Exception as e:
             logging.error(f"Failed to create symbol: {e}")
             return None
+
     def update_symbol(self, symbol_id, data):
         """Update a symbol."""
         try:
@@ -248,7 +251,7 @@ class API:
             return self.client.collection("adaptive_hedge_cycles").update(cycle_id, data)
         except Exception as e:
             logging.error(f"Failed to update AH cycle by ID: {e}")
-            
+
             return None
 
     def close_AH_cycle(self, cycle_id):
@@ -295,7 +298,18 @@ class API:
     def get_all_CT_active_cycles_by_account(self, account_id):
         """Get all active cycles by account."""
         try:
-            return self.client.collection("cycles_trader_cycles").get_full_list(200, {"filter": f"account = '{account_id}' && is_closed = False"})
+            logging.info(f"Fetching CT cycles for account ID: {account_id}")
+            if not account_id:
+                logging.error("Account ID is empty or None")
+                return []
+
+            filter_query = f"account = '{account_id}' && is_closed = False"
+            logging.info(f"Using filter query: {filter_query}")
+
+            cycles = self.client.collection("cycles_trader_cycles").get_full_list(
+                200, {"filter": filter_query})
+            logging.info(f"Retrieved {len(cycles)} cycles")
+            return cycles
         except Exception as e:
             logging.error(
                 f"An error occurred while fetching CT cycles by account: {e}")
@@ -335,6 +349,7 @@ class API:
         except Exception as e:
             logging.error(f"Failed to set bot as running: {e}")
             return None
+
     def send_log(self, data):
         """Create a log."""
         try:

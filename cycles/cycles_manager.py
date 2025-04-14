@@ -82,45 +82,120 @@ class cycles_manager:
             self.all_AH_cycles = self.get_all_AH_active_cycles()  # get all orders from MT5
             # get all orders from remote
             self.remote_AH_cycles = self.get_remote_AH_active_cycles()
+
+            if self.remote_AH_cycles is None:
+                logger.error("remote_AH_cycles is None")
+                return
+
             for remote_cycle in self.remote_AH_cycles:
-                cycle_id = remote_cycle.id
-                if cycle_id not in [cycle.remote_id for cycle in self.all_AH_cycles]:
-                    cycle_data = self.ah_repo.get_cycle_by_remote_id(cycle_id)
-                    if cycle_data is not None:
-                        cycle_obj = AH_cycle(cycle_data, self.mt5, self, "db")
-                        self.remote_api.update_AH_cycle_by_id(
-                            cycle_obj.cycle_id, cycle_obj.to_remote_dict())
-                    if cycle_data is None:
-                        cycle_obj = AH_cycle(
-                            remote_cycle, self.mt5, self, "remote")
-                        self.ah_repo.create_cycle(cycle_obj.to_dict())
+                try:
+                    if remote_cycle is None:
+                        logger.error(
+                            "Found None remote_cycle in remote_AH_cycles")
+                        continue
+
+                    cycle_id = remote_cycle.id
+                    if cycle_id not in [cycle.remote_id for cycle in self.all_AH_cycles]:
+                        cycle_data = self.ah_repo.get_cycle_by_remote_id(
+                            cycle_id)
+                        if cycle_data is not None:
+                            cycle_obj = AH_cycle(
+                                cycle_data, self.mt5, self, "db")
+                            self.remote_api.update_AH_cycle_by_id(
+                                cycle_obj.cycle_id, cycle_obj.to_remote_dict())
+                        if cycle_data is None:
+                            try:
+                                cycle_obj = AH_cycle(
+                                    remote_cycle, self.mt5, self, "remote")
+                                self.ah_repo.create_cycle(cycle_obj.to_dict())
+                            except Exception as creation_error:
+                                logger.error(
+                                    f"Error creating AH cycle from remote data: {creation_error}")
+                except Exception as cycle_error:
+                    logger.error(
+                        f"Error processing remote AH cycle: {cycle_error}")
+
             for cycle_data in self.all_AH_cycles:
-                cycle_obj = AH_cycle(cycle_data, self.mt5, self, "db")
-                self.remote_api.update_AH_cycle_by_id(
-                    cycle_obj.cycle_id, cycle_obj.to_remote_dict())
+                try:
+                    if cycle_data is None:
+                        logger.error("Found None cycle_data in all_AH_cycles")
+                        continue
+
+                    cycle_obj = AH_cycle(cycle_data, self.mt5, self, "db")
+                    remote_id = cycle_obj.cycle_id
+
+                    if not remote_id:
+                        logger.error(
+                            f"Empty remote_id for local AH cycle {cycle_data.id}")
+                        continue
+
+                    self.remote_api.update_AH_cycle_by_id(
+                        remote_id, cycle_obj.to_remote_dict())
+                except Exception as local_cycle_error:
+                    logger.error(
+                        f"Error processing local AH cycle: {local_cycle_error}")
         except Exception as e:
             logger.error(f"Error in sync_AH_cycles: {e}")
 
     async def sync_CT_cycles(self):
         try:
             self.all_CT_cycles = self.get_all_CT_active_cycles()
+
             self.remote_CT_cycles = self.get_remote_CT_active_cycles()
+
+            if self.remote_CT_cycles is None:
+                logger.error("remote_CT_cycles is None")
+                return
+
             for remote_cycle in self.remote_CT_cycles:
-                cycle_id = remote_cycle.id
-                if cycle_id not in [cycle.remote_id for cycle in self.all_CT_cycles]:
-                    cycle_data = self.ct_repo.get_cycle_by_remote_id(cycle_id)
-                    if cycle_data is not None:
-                        cycle_obj = CTcycle(cycle_data, self.mt5, self, "db")
-                        self.remote_api.update_CT_cycle_by_id(
-                            cycle_obj.cycle_id, cycle_obj.to_remote_dict())
-                    if cycle_data is None:
-                        cycle_obj = CTcycle(
-                            remote_cycle, self.mt5, self, "remote")
-                        self.ct_repo.create_cycle(cycle_obj.to_dict())
+                if remote_cycle is None:
+                    logger.error("Found None remote_cycle in remote_CT_cycles")
+                    continue
+
+                try:
+                    cycle_id = remote_cycle.id
+
+                    if cycle_id not in [cycle.remote_id for cycle in self.all_CT_cycles]:
+                        cycle_data = self.ct_repo.get_cycle_by_remote_id(
+                            cycle_id)
+
+                        if cycle_data is not None:
+                            cycle_obj = CTcycle(
+                                cycle_data, self.mt5, self, "db")
+                            self.remote_api.update_CT_cycle_by_id(
+                                cycle_obj.cycle_id, cycle_obj.to_remote_dict())
+                        if cycle_data is None:
+                            try:
+                                cycle_obj = CTcycle(
+                                    remote_cycle, self.mt5, self, "remote")
+                                self.ct_repo.create_cycle(cycle_obj.to_dict())
+                            except Exception as creation_error:
+                                logger.error(
+                                    f"Error creating cycle from remote data: {creation_error}")
+                except Exception as cycle_error:
+                    logger.error(
+                        f"Error processing remote cycle: {cycle_error}")
+
             for cycle_data in self.all_CT_cycles:
-                cycle_obj = CTcycle(cycle_data, self.mt5, self, "db")
-                self.remote_api.update_CT_cycle_by_id(
-                    cycle_obj.cycle_id, cycle_obj.to_remote_dict())
+                try:
+                    if cycle_data is None:
+                        logger.error("Found None cycle_data in all_CT_cycles")
+                        continue
+
+                    cycle_obj = CTcycle(cycle_data, self.mt5, self, "db")
+                    remote_id = cycle_obj.cycle_id
+
+                    if not remote_id:
+                        logger.error(
+                            f"Empty remote_id for local cycle {cycle_data.id}")
+                        continue
+
+                    remote_dict = cycle_obj.to_remote_dict()
+                    self.remote_api.update_CT_cycle_by_id(
+                        remote_id, remote_dict)
+                except Exception as local_cycle_error:
+                    logger.error(
+                        f"Error processing local cycle: {local_cycle_error}")
         except Exception as e:
             logger.error(f"Error in sync_CT_cycles: {e}")
 

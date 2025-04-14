@@ -100,7 +100,7 @@ class Bot:
         self.symbol_name = bot.bot_configs["symbol"]
         self.symbol = bot.symbol
         self.name = bot.name
-        
+
         return bot
 
     async def handle_event(self, event):
@@ -121,6 +121,16 @@ class Bot:
 
     async def run(self):
         """ Run the bot """
+        if self.strategy is None:
+            # Try re-initializing the strategy if it's None
+            logging.info(
+                f"Strategy is None for bot {self.id}. Attempting to reinitialize...")
+            self.init_strategy()
+
         if self.strategy is not None:
             # Run the strategy
+            logging.info(f"Running strategy for bot {self.id}")
             await self.strategy.run_in_thread()
+        else:
+            logging.error(
+                f"Cannot run bot {self.id} - strategy initialization failed")

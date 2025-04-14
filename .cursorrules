@@ -1,0 +1,45 @@
+# Patrick Display Project Rules
+
+## Project Structure
+- Views/: Contains all UI components and views
+- DB/: Database related code and operations
+- helpers/: Utility functions and helper modules
+- Strategy/: Trading strategy implementations
+- Bots/: Trading bot implementations
+- MetaTrader/: MetaTrader integration code
+- Api/: API-related functionality
+
+## Coding Patterns
+- Views follow a component-based structure
+- Use FletX for routing between views
+- Repository pattern for data access
+- Threading for background operations
+- Asyncio for non-blocking operations
+
+## File Naming Conventions
+- View files follow PascalCase naming: HomePageView.py
+- Route definitions use SCREAMING_SNAKE_CASE: HOME_PAGE
+- Use descriptive names that reflect component purpose
+
+## Environment
+- Python 3 with virtual environment (venv)
+- Dependencies managed through requirements.txt
+- Run the application with `python main.py`
+
+## Authentication
+- Dual authentication systems:
+  - MetaTrader 5
+  - PocketBase (remote)
+- Credentials can be stored locally
+
+## Data Flow
+- Views request data from repositories
+- Repositories interact with databases
+- Global state managed through helpers/store.py
+- Authentication managed through Views/auth/auth.py
+
+## Testing
+- Manual testing of application features
+- Verify login functionality for both authentication methods
+- Confirm proper trading bot operation
+- Validate account management functions 
