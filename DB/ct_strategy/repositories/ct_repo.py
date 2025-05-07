@@ -2,6 +2,7 @@ from sqlmodel import Session, select
 from sqlalchemy.exc import SQLAlchemyError
 from DB.ct_strategy.models.ct_cycles import CTCycle
 from DB.ct_strategy.models.ct_cycles_orders import CtCyclesOrders
+from DB.ct_strategy.models.ct_config import CTConfig
 from datetime import datetime
 
 
@@ -198,4 +199,42 @@ class CTRepo:
                 return None
         except SQLAlchemyError as e:
             print(f"Failed to update AH order: {e}")
+            return None
+
+    # Configuration methods
+    def get_config(self, symbol, bot_id, account_id):
+        """Get configuration for a specific symbol, bot, and account"""
+        with Session(self.engine) as session:
+            statement = select(CTConfig).where(
+                CTConfig.symbol == symbol,
+                CTConfig.bot_id == bot_id,
+                CTConfig.account_id == account_id
+            )
+            return session.exec(statement).first()
+
+    def create_config(self, config_data):
+        """Create a new configuration"""
+        with Session(self.engine) as session:
+            config = CTConfig(**config_data)
+            session.add(config)
+            session.commit()
+            session.refresh(config)
+            return config
+
+    def update_config(self, symbol, bot_id, account_id, config_data):
+        """Update configuration for a specific symbol, bot, and account"""
+        with Session(self.engine) as session:
+            statement = select(CTConfig).where(
+                CTConfig.symbol == symbol,
+                CTConfig.bot_id == bot_id,
+                CTConfig.account_id == account_id
+            )
+            config = session.exec(statement).first()
+            if config:
+                for key, value in config_data.items():
+                    setattr(config, key, value)
+                session.add(config)
+                session.commit()
+                session.refresh(config)
+                return config
             return None

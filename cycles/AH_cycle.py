@@ -4,6 +4,7 @@ import MetaTrader5 as Mt5
 from DB.db_engine import engine
 from DB.ah_strategy.repositories.ah_repo import AHRepo
 from types import SimpleNamespace
+from helpers.sync import verify_order_status, sync_delay, MT5_LOCK
 
 
 class cycle:
@@ -191,56 +192,122 @@ class cycle:
     async def update_cycle(self, remote_api):
         self.total_profit = 0
         self.total_volume = 0
+
+        # Process all non-closed orders first to get current profit and volume
         for order_ticket in self.orders:
             order_data = self.local_api.get_order_by_ticket(order_ticket)
-            if order_data is not None and order_data:
+            if order_data is not None and order_data and not order_data.is_closed:
                 self.total_profit += order_data.profit+order_data.swap+order_data.commission
                 self.total_volume += order_data.volume
-                # check if order is already closed
-                if order_data.is_closed:
 
-                    order_kind = order_data.kind
-                    if order_kind == "initial":
-                        self.remove_initial_order(order_ticket)
-                    elif order_kind == "hedge":
-                        self.remove_hedge_order(order_ticket)
-                    elif order_kind == "recovery":
-                        self.remove_recovery_order(order_ticket)
-                    elif order_kind == "pending":
-                        if order_ticket in self.pending:
-                            self.remove_pending_order(order_ticket)
-                        if order_ticket in self.initial:
-                            self.remove_initial_order(order_ticket)
-                    if order_ticket not in self.closed:
-                        self.closed.append(order_ticket)
-                if order_data.is_pending is False and order_ticket in self.pending:
+                # Handle pending order conversion
+                if not order_data.is_pending and order_ticket in self.pending:
                     self.remove_pending_order(order_ticket)
                     self.add_initial_order(order_ticket)
                     self.is_pending = False
                     self.status = "initial"
+
+        # Process potentially closed orders separately with careful verification
+        orders_to_process = []
+        for order_ticket in self.orders:
+            order_data = self.local_api.get_order_by_ticket(order_ticket)
+            if order_data is not None and order_data:
+                # Check if order is closed in database or not found in active MT5 positions/orders
+                # Instead of using getattr(self, "all_mt5_orders", []) which causes errors, check directly with MT5
+                positions = self.mt5.get_position_by_ticket(
+                    ticket=order_ticket)
+                pending_orders = self.mt5.get_order_by_ticket(
+                    ticket=order_ticket)
+                is_active_in_mt5 = (positions is not None and len(positions) > 0) or (
+                    pending_orders is not None and len(pending_orders) > 0)
+
+                if order_data.is_closed or not is_active_in_mt5:
+                    orders_to_process.append((order_ticket, order_data))
+
+        # Process closed orders with careful verification
+        for order_ticket, order_data in orders_to_process:
+            # Create order object for verification
+            order_obj = order(order_data, order_data.is_pending,
+                              self.mt5, self.local_api, "db", self.id)
+
+            # Verify order status with multiple checks for consistency
+            is_open, is_closed, is_pending = await verify_order_status(self.mt5, order_ticket)
+
+            # Update the state based on verification results
+            if is_closed:
+                # Order is truly closed
+                order_kind = order_data.kind
+                if order_kind == "initial":
+                    self.remove_initial_order(order_ticket)
+                elif order_kind == "hedge":
+                    self.remove_hedge_order(order_ticket)
+                elif order_kind == "recovery":
+                    self.remove_recovery_order(order_ticket)
+                elif order_kind == "pending":
+                    if order_ticket in self.pending:
+                        self.remove_pending_order(order_ticket)
+                    if order_ticket in self.initial:
+                        self.remove_initial_order(order_ticket)
+
+                # Add to closed list if not already there
+                if order_ticket not in self.closed:
+                    self.closed.append(order_ticket)
+
+                # Update order status in database if needed
+                if not order_data.is_closed:
+                    order_obj.is_closed = True
+                    order_obj.update_order()
+
+            else:
+                # Order is actually open - fix the database
+                if order_data.is_closed:
+                    # Fix incorrect closed status
+                    print(
+                        f"Fixing incorrect closed status for order {order_ticket}")
+                    order_obj.is_closed = False
+                    order_obj.update_order()
+
+                    # Remove from closed list if present
+                    if order_ticket in self.closed:
+                        self.closed.remove(order_ticket)
+
+        # Handle pending state transitions
         if len(self.pending) == 0 and self.is_pending is True:
             self.is_pending = False
             self.status = "initial"
+
+        # Handle BUY&SELL specific logic
         if len(self.pending) == 0 and len(self.initial) == 1 and self.status == "initial" and self.cycle_type == "BUY&SELL" and len(self.orders) == 1 and len(self.closed) == 0:
-            # # close the pending order anc open it as market order
+            # Close the pending order and open it as market order
             order_data = self.local_api.get_order_by_ticket(self.initial[0])
             order_obj = order(order_data, order_data.is_pending,
                               self.mt5, self.local_api, "db", self.id)
-            new_order = self.mt5.sell(
-                self.symbol, order_obj.volume, self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "pending")
-            self.add_initial_order(new_order[0].ticket)
-            new_order_obj = order(
-                new_order[0], False, self.mt5, self.local_api, "mt5", self.id)
-            new_order_obj.create_order()
 
+            # Use lock for MT5 operations
+            with MT5_LOCK:
+                new_order = self.mt5.sell(
+                    self.symbol, order_obj.volume, self.bot.bot.magic, 0, 0, "PIPS", self.bot.slippage, "pending")
+
+            if new_order:
+                self.add_initial_order(new_order[0].ticket)
+                new_order_obj = order(
+                    new_order[0], False, self.mt5, self.local_api, "mt5", self.id)
+                new_order_obj.create_order()
+
+        # Only close cycle if all orders are truly closed (verified with MT5)
         if len(self.orders) == 0:
             self.status = "closed"
             self.is_closed = True
             self.closing_method["sent_by_admin"] = False
             self.closing_method["user_id"] = 0
             self.closing_method["username"] = "MetaTrader5"
+
+            # Add delay before remote update to ensure consistency
+            await sync_delay(0.2)
             remote_api.update_AH_cycle_by_id(
                 self.cycle_id, self.to_remote_dict())
+
+        # Save cycle state
         self.local_api.Update_cycle(self.id, self.to_dict())
     # create a new cycle
 

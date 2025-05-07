@@ -62,37 +62,97 @@ class order:
         }
 
     def update_from_mt5(self):
-        # check if the order is pending
-        self.is_pending = self.Mt5.check_order_is_pending(self.ticket)
-        # if the order is closed, mark it as closed and return False
-        self.is_closed = self.Mt5.check_order_is_closed(self.ticket)
+        """Update order status and information from MT5 terminal
+        Returns True if order exists and was updated, False otherwise
+        """
+        # Add retry mechanism to handle potential temporary connection issues
+        max_retries = 3
+        retry_delay = 0.2  # 200ms
 
-        # get the order information if it exists and update the class attributes accordingly
-        # if the order does not exist, print an error message and return False. Otherwise, return True.
-        if self.is_pending:
-            order_data = self.Mt5.get_order_by_ticket(ticket=self.ticket)
-        else:
-            order_data = self.Mt5.get_position_by_ticket(ticket=self.ticket)
-        if len(order_data) == 0:
-            return False
-        if self.is_closed:
-            return False
-        order_data = order_data[0]
+        for attempt in range(max_retries):
+            try:
+                # Get the order information first to check if it exists in MT5
+                positions_data = self.Mt5.get_position_by_ticket(
+                    ticket=self.ticket)
+                pending_data = self.Mt5.get_order_by_ticket(ticket=self.ticket)
 
+                # Order exists as an active position
+                if positions_data is not None and len(positions_data) > 0:
+                    self.is_pending = False
+                    self.is_closed = False
+                    order_data = positions_data[0]
+
+                    # Update order details
+                    self._update_order_details(order_data, is_pending=False)
+                    return True
+
+                # Order exists as a pending order
+                elif pending_data is not None and len(pending_data) > 0:
+                    self.is_pending = True
+                    self.is_closed = False
+                    order_data = pending_data[0]
+
+                    # Update order details
+                    self._update_order_details(order_data, is_pending=True)
+                    return True
+
+                # Order not found in active orders, check if it's closed
+                else:
+                    # Check if order is closed in MT5 with a more robust verification
+                    is_closed = self.Mt5.check_order_is_closed(self.ticket)
+
+                    # Only mark as closed if we're confident
+                    if is_closed:
+                        # Double-check after a short delay to ensure consistent state
+                        import time
+                        time.sleep(0.1)  # 100ms delay
+
+                        # Re-check to confirm it's really closed
+                        if self.Mt5.check_order_is_closed(self.ticket):
+                            print(
+                                f"Order {self.ticket} is confirmed closed in MT5")
+                            self.is_closed = True
+                            # No need to update other details for closed orders
+                            return False
+
+                    # Order wasn't found and doesn't appear to be closed - this is unusual
+                    # Wait and retry if we have attempts remaining
+                    if attempt < max_retries - 1:
+                        print(
+                            f"Order {self.ticket} not found in MT5, retrying... (Attempt {attempt+1})")
+                        time.sleep(retry_delay)
+                        continue
+                    else:
+                        # This is a problematic state - order not found in MT5 but not marked as closed
+                        print(
+                            f"Warning: Order {self.ticket} not found in MT5 and not in history")
+                        return False
+
+            except Exception as e:
+                print(f"Error updating order {self.ticket} from MT5: {e}")
+                # Only retry on error if we have attempts remaining
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                    continue
+                return False
+
+        # If we get here, all retries failed
+        return False
+
+    def _update_order_details(self, order_data, is_pending):
+        """Helper method to update order details"""
         self.comment = order_data.comment
         self.magic_number = order_data.magic
         self.open_price = round(order_data.price_open, 2)
         self.open_time = datetime.datetime.fromtimestamp(
-            order_data.time_setup if self.is_pending else order_data.time).strftime('%Y-%m-%d %H:%M:%S')
-        self.profit = round(0 if self.is_pending else order_data.profit, 2)
-        self.swap = round(0 if self.is_pending else order_data.swap, 2)
+            order_data.time_setup if is_pending else order_data.time).strftime('%Y-%m-%d %H:%M:%S')
+        self.profit = round(0 if is_pending else order_data.profit, 2)
+        self.swap = round(0 if is_pending else order_data.swap, 2)
         self.symbol = order_data.symbol
         self.ticket = order_data.ticket
         self.type = order_data.type
         self.volume = round(
-            order_data.volume_current if self.is_pending else order_data.volume, 2)
-
-        return True
+            order_data.volume_current if is_pending else order_data.volume, 2)
 
     def check_false_closed_cycles(self):
         from cycles.AH_cycle import cycle as AH_cycle

@@ -102,7 +102,7 @@ class MetaTrader:
 
     def get_symbols_from_watch(self):
         """ Get the symbols from a market """
-        
+
         symbols = Mt5.symbols_get()
         return symbols
 
@@ -527,19 +527,97 @@ class MetaTrader:
 
     # check if order is closed
     def check_order_is_closed(self, ticket):
-        """
-                #    Example usage:
-        # ticket = 12345678  # replace with your order ticket
-        # if is_order_closed(ticket):
-        #     print(f"Order {ticket} is closed")
-        # else:
-        #     print(f"Order {ticket} is not closed")
-            """
-        order = self.get_order_by_ticket(ticket=ticket)
-        if len(order) > 0:
-            return False
-        order = self.get_position_by_ticket(ticket=ticket)
-        if len(order) > 0:
+        """ Check if an order is closed """
+        # First check if the order exists in active positions
+        positions = self.get_position_by_ticket(ticket=ticket)
+        if positions is not None and len(positions) > 0:
+            # Order is active, therefore not closed
             return False
 
-        return True
+        # Next check if it exists in pending orders
+        orders = self.get_order_by_ticket(ticket=ticket)
+        if orders is not None and len(orders) > 0:
+            # Order is active as a pending order, therefore not closed
+            return False
+
+        # If we get here, the order is not active. Check history to confirm it was a real order
+        history_orders = Mt5.history_orders_get(ticket=ticket)
+        history_deals = Mt5.history_deals_get(ticket=ticket)
+
+        # If order is in history in any form, it existed and now is closed
+        if (history_orders is not None and len(history_orders) > 0) or \
+           (history_deals is not None and len(history_deals) > 0):
+            return True
+
+        # If we get here, the order was not found in any state - active or history
+        # This could be an invalid ticket or a system error
+        print(f"Warning: Order {ticket} not found in active orders or history")
+        return False
+
+    # New methods for candle data retrieval
+    def get_candles(self, symbol, timeframe, count=10):
+        """Get candle data for a symbol and timeframe
+
+        Args:
+            symbol (str): Symbol name
+            timeframe (str): Timeframe in MetaTrader format (e.g., "M1", "M5", "H1", etc.)
+            count (int): Number of candles to retrieve
+
+        Returns:
+            list: List of candle data
+        """
+        # Convert string timeframe to MetaTrader constant
+        tf_map = {
+            "M1": Mt5.TIMEFRAME_M1,
+            "M5": Mt5.TIMEFRAME_M5,
+            "M15": Mt5.TIMEFRAME_M15,
+            "M30": Mt5.TIMEFRAME_M30,
+            "H1": Mt5.TIMEFRAME_H1,
+            "H4": Mt5.TIMEFRAME_H4,
+            "D1": Mt5.TIMEFRAME_D1,
+            "W1": Mt5.TIMEFRAME_W1,
+            "MN1": Mt5.TIMEFRAME_MN1
+        }
+
+        # Default to H1 if timeframe not found
+        mt5_timeframe = tf_map.get(timeframe, Mt5.TIMEFRAME_H1)
+
+        # Get the candle data
+        candles = Mt5.copy_rates_from_pos(symbol, mt5_timeframe, 0, count)
+        return candles
+
+    def get_last_candle(self, symbol, timeframe):
+        """Get the last completed candle for a symbol and timeframe
+
+        Args:
+            symbol (str): Symbol name
+            timeframe (str): Timeframe in MetaTrader format
+
+        Returns:
+            dict: Last candle data
+        """
+        candles = self.get_candles(symbol, timeframe, 2)
+        if candles is not None and len(candles) >= 2:
+            # Return the second-to-last candle (last completed)
+            return candles[0]
+        return None
+
+    def check_candle_direction(self, symbol, timeframe):
+        """Check if the last completed candle closed up or down
+
+        Args:
+            symbol (str): Symbol name
+            timeframe (str): Timeframe in MetaTrader format
+
+        Returns:
+            str: "UP" if candle closed up, "DOWN" if candle closed down, None if can't determine
+        """
+        last_candle = self.get_last_candle(symbol, timeframe)
+        if last_candle is not None:
+            # Check if close is higher than open (bullish/up candle)
+            if last_candle["close"] > last_candle["open"]:
+                return "UP"
+            # Check if close is lower than open (bearish/down candle)
+            elif last_candle["close"] < last_candle["open"]:
+                return "DOWN"
+        return None

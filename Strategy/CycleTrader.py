@@ -41,11 +41,88 @@ class CycleTrader(Strategy):
         self.hedges_numbers = None
         self.ADD_All_to_PNL = True
         self.autotrade_pips_restriction = 100
+        # New auto candle close settings
+        self.auto_candle_close = False
+        self.candle_timeframe = "H1"
+        self.hedge_sl = 100
+        self.prevent_opposing_trades = True
+        self.last_candle_time = None
         self.init_settings()
 
     def initialize(self, config, settings):
         """ Initialize the CycleTrader strategy """
         self.update_configs(config, settings)
+
+        # Try to load configuration from database
+        try:
+            db_config = self.local_api.get_config(
+                symbol=self.symbol,
+                bot_id=self.bot.id,
+                account_id=self.meta_trader.account_id
+            )
+
+            if db_config:
+                # Convert database config to dictionary
+                config_dict = {
+                    "enable_recovery": db_config.enable_recovery,
+                    "lot_sizes": db_config.lot_sizes,
+                    "pips_step": db_config.pips_step,
+                    "slippage": db_config.slippage,
+                    "sltp": db_config.sltp,
+                    "take_profit": db_config.take_profit,
+                    "zone_array": db_config.zones,
+                    "zone_forward": db_config.zone_forward,
+                    "zone_forward2": db_config.zone_forward2,
+                    "symbol": db_config.symbol,
+                    "max_cycles": db_config.max_cycles,
+                    "autotrade": db_config.autotrade,
+                    "autotrade_threshold": db_config.autotrade_threshold,
+                    "hedges_numbers": db_config.hedges_numbers,
+                    "buy_and_sell_add_to_pnl": db_config.buy_and_sell_add_to_pnl,
+                    "autotrade_pips_restriction": db_config.autotrade_pips_restriction,
+                    "auto_candle_close": db_config.auto_candle_close,
+                    "candle_timeframe": db_config.candle_timeframe,
+                    "hedge_sl": db_config.hedge_sl,
+                    "prevent_opposing_trades": db_config.prevent_opposing_trades
+                }
+
+                # Update config with database values
+                self.update_configs(config_dict, settings)
+                logger.info(
+                    f"Loaded configuration from database for {self.symbol}")
+            else:
+                # Create default configuration in database
+                config_dict = {
+                    "symbol": self.symbol,
+                    "bot_id": self.bot.id,
+                    "account_id": self.meta_trader.account_id,
+                    "enable_recovery": self.enable_recovery,
+                    "lot_sizes": self.lot_sizes,
+                    "pips_step": self.pips_step,
+                    "slippage": self.slippage,
+                    "sltp": self.sltp,
+                    "take_profit": self.take_profit,
+                    "zones": self.zones,
+                    "zone_forward": self.zone_forward,
+                    "zone_forward2": self.zone_forward2,
+                    "max_cycles": self.max_cycles,
+                    "autotrade": self.autotrade,
+                    "autotrade_threshold": self.autotrade_threshold,
+                    "hedges_numbers": self.hedges_numbers,
+                    "buy_and_sell_add_to_pnl": self.ADD_All_to_PNL,
+                    "autotrade_pips_restriction": self.autotrade_pips_restriction,
+                    "auto_candle_close": self.auto_candle_close,
+                    "candle_timeframe": self.candle_timeframe,
+                    "hedge_sl": self.hedge_sl,
+                    "prevent_opposing_trades": self.prevent_opposing_trades
+                }
+
+                self.local_api.create_config(config_dict)
+                logger.info(
+                    f"Created default configuration in database for {self.symbol}")
+        except Exception as e:
+            logger.error(f"Error loading configuration from database: {e}")
+            # Continue with the configuration from parameter
 
     def init_settings(self):
         """ Initialize the settings for the CycleTrader strategy """
@@ -72,14 +149,29 @@ class CycleTrader(Strategy):
             self.autotrade_pips_restriction = self.config.get(
                 "autotrade_pips_restriction", 100)
 
+            # Initialize auto candle close settings
+            self.auto_candle_close = self.config.get(
+                "auto_candle_close", False)
+            self.candle_timeframe = self.config.get("candle_timeframe", "H1")
+            self.hedge_sl = self.config.get("hedge_sl", 100)
+            self.prevent_opposing_trades = self.config.get(
+                "prevent_opposing_trades", True)
+
             if self.settings and hasattr(self.settings, 'stopped'):
                 self.stop = self.settings.stopped
             else:
                 self.stop = False
 
             self.last_cycle_price = self.meta_trader.get_ask(self.symbol)
-            logger.info(
-                f"CycleTrader settings initialized for {self.symbol} with zone_forward2={self.zone_forward2}")
+
+            # Log key settings for debugging
+            logger.info(f"CycleTrader initialization for {self.symbol}:")
+            logger.info(f"- auto_candle_close: {self.auto_candle_close}")
+            logger.info(f"- candle_timeframe: {self.candle_timeframe}")
+            logger.info(f"- hedge_sl: {self.hedge_sl}")
+            logger.info(f"- zone_forward: {self.zone_forward}")
+            logger.info(f"- zone_forward2: {self.zone_forward2}")
+
         except Exception as e:
             logger.error(f"Error initializing CycleTrader settings: {e}")
             # Set default values for critical parameters
@@ -381,26 +473,34 @@ class CycleTrader(Strategy):
                 pips = self.meta_trader.get_pips(self.symbol)
                 up_price = self.last_cycle_price+self.autotrade_threshold*pips
                 down_price = self.last_cycle_price-self.autotrade_threshold*pips
-                if ask >= up_price or bid <= down_price:
+                if ask >= up_price :
                     self.last_cycle_price = ask if ask >= up_price else bid if bid <= down_price else 0
                     # Check if autotrade is enabled AND either restrictions are disabled (value = 0) OR passed the check
                     if self.autotrade and (self.autotrade_pips_restriction == 0 or cycles_Restrition == False):
                         if self.stop is False:
                             order1 = self.meta_trader.buy(
                                 self.symbol, self.lot_sizes[0], self.bot.magic, 0, 0, "PIPS", self.slippage, "initial")
-                            order2 = self.meta_trader.sell(
+                            # order2 = self.meta_trader.sell(
+                            #     self.symbol, self.lot_sizes[0], self.bot.magic, 0, 0, "PIPS", self.slippage, "initial")
+                            await self.create_cycle(order1, None, False,
+                                                    False, 0, "MetaTrader5", "BUY")
+                elif bid <= down_price:
+                    self.last_cycle_price = ask if ask >= up_price else bid if bid <= down_price else 0
+                    # Check if autotrade is enabled AND either restrictions are disabled (value = 0) OR passed the check
+                    if self.autotrade and (self.autotrade_pips_restriction == 0 or cycles_Restrition == False):
+                        if self.stop is False:
+                            order1 = self.meta_trader.sell(
                                 self.symbol, self.lot_sizes[0], self.bot.magic, 0, 0, "PIPS", self.slippage, "initial")
-                            await self.create_cycle(order1, order2, False,
-                                                    False, 0, "MetaTrader5", "BUY&SELL")
+                            # order2 = self.meta_trader.sell(
+                            #     self.symbol, self.lot_sizes[0], self.bot.magic, 0, 0, "PIPS", self.slippage, "initial")
+                            await self.create_cycle(order1, None, False,
+                                                    False, 0, "MetaTrader5", "SELL")
         except Exception as e:
             self.logger.error(f"Error opening new cycle: {e}")
 
     async def run(self):
         """
         This function runs the adaptive hedging strategy.
-
-        Parameters:
-        None
 
         Returns:
         None
@@ -435,12 +535,115 @@ class CycleTrader(Strategy):
                     tasks.append(cycle_obj.update_cycle(self.client))
                     tasks.append(cycle_obj.close_cycle_on_takeprofit(
                         self.take_profit, self.client))
+
                 tasks.append(self.open_new_cycle(
                     active_cycles, New_cycles_Restrition))
-                await asyncio.gather(*tasks)
+
+                # # Add candle trading check if enabled - create a separate task
+                # if self.auto_candle_close and not self.stop:
+                #     logger.debug(
+                #         f"Adding candle trading check for {self.symbol}")
+                #     # Run the check directly rather than just adding it to tasks
+                #     await self.check_candle_trading()
+
+                # If we have tasks, gather them
+                if tasks:
+                    await asyncio.gather(*tasks)
+
             except Exception as e:
                 self.logger.error(f"Error in run loop: {e}")
+                import traceback
+                self.logger.error(traceback.format_exc())
+
+            # Always sleep at the end to prevent CPU overload
             await asyncio.sleep(1)
+
+    async def check_candle_trading(self):
+        """Check for candle close events and execute trades
+
+        This method monitors candle closes and executes trades based on
+        the direction of the candle close. It also handles hedging.
+        """
+        try:
+            # Get the last candle
+            last_candle = self.meta_trader.get_last_candle(
+                self.symbol, self.candle_timeframe)
+
+            if last_candle is None:
+                logger.debug(
+                    f"No candle data available for {self.symbol} {self.candle_timeframe}")
+                return
+
+            # Check if this is a new candle since the last check
+            candle_time = last_candle["time"]
+
+            if self.last_candle_time is None or candle_time > self.last_candle_time:
+                self.last_candle_time = candle_time
+
+                # Check candle direction
+                direction = self.meta_trader.check_candle_direction(
+                    self.symbol, self.candle_timeframe)
+
+                if direction:
+                    logger.info(
+                        f"New {self.candle_timeframe} candle closed {direction} for {self.symbol}")
+
+                    try:
+                        # Place the order based on candle direction
+                        if direction == "UP":
+                            # Place a buy order
+                            order1 = self.meta_trader.buy(
+                                self.symbol, self.lot_sizes[0], self.bot.magic, 0, 0, "PIPS", self.slippage, "initial")
+
+                            # Calculate hedge level below entry
+                            entry_price = order1[0].price_open
+                            pip_value = self.meta_trader.get_pips(self.symbol)
+                            hedge_price = entry_price - \
+                                (self.hedge_sl * pip_value)
+
+                            # # Place pending sell stop order as hedge
+                            # hedge_order = self.meta_trader.sell_stop(
+                            #     self.symbol, hedge_price, self.lot_sizes[0], self.bot.magic, 0, 0, "PIPS", self.slippage, "hedge")
+
+                            # Create cycle with both orders
+                            await self.create_cycle(
+                                order1, None, False, False, 0, "MetaTrader5", "SELL")
+                            logger.info(
+                                f"Created UP cycle with hedge at {hedge_price}")
+
+                        elif direction == "DOWN":
+                            # Place a sell order
+                            order1 = self.meta_trader.sell(
+                                self.symbol, self.lot_sizes[0], self.bot.magic, 0, 0, "PIPS", self.slippage, "initial")
+
+                            # Calculate hedge level above entry
+                            entry_price = order1[0].price_open
+                            pip_value = self.meta_trader.get_pips(self.symbol)
+                            hedge_price = entry_price + \
+                                (self.hedge_sl * pip_value)
+
+                            # # Place pending buy stop order as hedge
+                            # hedge_order = self.meta_trader.buy_stop(
+                            #     self.symbol, hedge_price, self.lot_sizes[0], self.bot.magic, 0, 0, "PIPS", self.slippage, "hedge")
+
+                            # Create cycle with both orders
+                            await self.create_cycle(
+                                order1, None, False, False, 0, "MetaTrader5", "BUY")
+                            logger.info(
+                                f"Created DOWN cycle with hedge at {hedge_price}")
+                    except Exception as order_ex:
+                        logger.error(
+                            f"Error placing orders for {direction} candle: {order_ex}")
+                        import traceback
+                        logger.error(traceback.format_exc())
+                else:
+                    logger.debug(
+                        f"No clear direction for candle on {self.symbol} {self.candle_timeframe}")
+
+        except Exception as e:
+            logger.error(f"Error in check_candle_trading: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
 
     async def run_in_thread(self):
         """
