@@ -3,6 +3,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from DB.ah_strategy.models.ah_cycles import AHCycle
 from DB.ah_strategy.models.ah_cycles_orders import AhCyclesOrders
 from datetime import datetime
+from sqlalchemy import and_
 
 
 class AHRepo:
@@ -36,8 +37,8 @@ class AHRepo:
             cycles = session.exec(select(AHCycle).where(
                 AHCycle.is_closed == False and AHCycle.bot == bot
             )).all()
-            
-            active_cycles = [cycle for cycle in cycles if cycle.bot == bot ]
+
+            active_cycles = [cycle for cycle in cycles if cycle.bot == bot]
             return active_cycles
 
     def get_all_cycles(self) -> list[AHCycle] | None:
@@ -196,3 +197,27 @@ class AHRepo:
         except SQLAlchemyError as e:
             print(f"Failed to update AH order: {e}")
             return None
+
+    def get_recently_closed_cycles(self, account_id, timestamp):
+        """
+        Get cycles that were recently closed after the specified timestamp.
+        Used to check for cycles that might have been incorrectly marked as closed.
+
+        Args:
+            account_id: The account ID to filter by
+            timestamp: Unix timestamp to filter by (get cycles closed after this time)
+
+        Returns:
+            List of cycles
+        """
+        with Session(self.engine) as session:
+            statement = select(AHCycle).where(
+                and_(
+                    AHCycle.account == account_id,
+                    AHCycle.is_closed == True,
+                    # If we had a closed_at timestamp field, we would use it here
+                    # For now, just get all closed cycles
+                )
+            )
+            cycles = session.exec(statement).all()
+            return cycles

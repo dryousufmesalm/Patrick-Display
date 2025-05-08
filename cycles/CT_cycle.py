@@ -409,8 +409,19 @@ class cycle:
                     new_order[0], False, self.mt5, self.local_api, "mt5", self.id)
                 new_order_obj.create_order()
 
+        # Directly check with MT5 if any orders are still open
+        any_still_open = False
+        all_order_tickets = self.initial + self.hedge + \
+            self.pending + self.recovery + self.threshold
+        for ticket in all_order_tickets:
+            positions = self.mt5.get_position_by_ticket(ticket=ticket)
+            pending_orders = self.mt5.get_order_by_ticket(ticket=ticket)
+            if (positions is not None and len(positions) > 0) or (pending_orders is not None and len(pending_orders) > 0):
+                any_still_open = True
+                break
+
         # Only close cycle if all orders are truly closed (verified with MT5)
-        if len(self.orders) == 0:
+        if len(self.orders) == 0 and not any_still_open:
             self.status = "closed"
             self.is_closed = True
             self.closing_method["sent_by_admin"] = False
@@ -421,6 +432,11 @@ class cycle:
             await sync_delay(0.2)
             remote_api.update_CT_cycle_by_id(
                 self.cycle_id, self.to_remote_dict())
+        elif any_still_open and self.is_closed:
+            # If marked as closed but has open orders, fix it
+            self.is_closed = False
+            self.status = "open"
+            print(f"Fixed cycle {self.id} incorrectly marked as closed")
 
         # Save cycle state
         self.local_api.Update_cycle(self.id, self.to_dict())

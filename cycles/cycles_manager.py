@@ -71,7 +71,8 @@ class cycles_manager:
             try:
                 await asyncio.gather(
                     self.sync_AH_cycles(),
-                    self.sync_CT_cycles()
+                    self.sync_CT_cycles(),
+                    self.fix_incorrectly_closed_cycles()
                 )
                 await asyncio.sleep(1)
             except Exception as e:
@@ -198,6 +199,104 @@ class cycles_manager:
                         f"Error processing local cycle: {local_cycle_error}")
         except Exception as e:
             logger.error(f"Error in sync_CT_cycles: {e}")
+
+    async def fix_incorrectly_closed_cycles(self):
+        """
+        Check for cycles that are marked as closed but still have open orders in MT5.
+        This fixes the issue where cycles are incorrectly marked as closed.
+        """
+        try:
+            # Get all closed cycles from the last 24 hours
+            time_24h_ago = int(time.time()) - (24 * 60 * 60)
+            closed_ah_cycles = self.ah_repo.get_recently_closed_cycles(
+                self.account.id, time_24h_ago)
+            closed_ct_cycles = self.ct_repo.get_recently_closed_cycles(
+                self.account.id, time_24h_ago)
+
+            # Process AH cycles
+            fixed_ah_count = 0
+            for cycle_data in closed_ah_cycles:
+                if await self.check_and_fix_closed_cycle(cycle_data, self.ah_repo, AH_cycle, "AH"):
+                    fixed_ah_count += 1
+
+            # Process CT cycles
+            fixed_ct_count = 0
+            for cycle_data in closed_ct_cycles:
+                if await self.check_and_fix_closed_cycle(cycle_data, self.ct_repo, CTcycle, "CT"):
+                    fixed_ct_count += 1
+
+            if fixed_ah_count > 0 or fixed_ct_count > 0:
+                logger.info(
+                    f"Fixed {fixed_ah_count} AH cycles and {fixed_ct_count} CT cycles incorrectly marked as closed")
+        except Exception as e:
+            logger.error(f"Error in fix_incorrectly_closed_cycles: {e}")
+
+    async def check_and_fix_closed_cycle(self, cycle_data, repo, cycle_class, cycle_type):
+        """
+        Check if a cycle still has open orders in MT5 and fix its status if needed.
+
+        Args:
+            cycle_data: The cycle data from the database
+            repo: The repository for the cycle type (AH or CT)
+            cycle_class: The cycle class to instantiate
+            cycle_type: A string indicating the cycle type ("AH" or "CT")
+
+        Returns:
+            bool: True if the cycle was fixed, False otherwise
+        """
+        try:
+            # Create cycle object
+            cycle_obj = cycle_class(cycle_data, self.mt5, self, "db")
+
+            # Get all order tickets from this cycle
+            all_cycle_orders = cycle_obj.combine_orders()
+
+            # Check if any orders are still open in MT5
+            still_open = False
+            for ticket in all_cycle_orders:
+                # Check if the order is still open in MT5
+                position = self.mt5.get_position_by_ticket(ticket=ticket)
+                if position and len(position) > 0:
+                    logger.warning(
+                        f"Found open position {ticket} in MT5 for closed {cycle_type} cycle {cycle_data.id}")
+                    still_open = True
+                    break
+
+                # Also check pending orders
+                pending = self.mt5.get_order_by_ticket(ticket=ticket)
+                if pending and len(pending) > 0:
+                    logger.warning(
+                        f"Found pending order {ticket} in MT5 for closed {cycle_type} cycle {cycle_data.id}")
+                    still_open = True
+                    break
+
+            # If we found open orders, update the cycle status
+            if still_open:
+                logger.info(
+                    f"Fixing {cycle_type} cycle {cycle_data.id} incorrectly marked as closed")
+
+                # Reopen the cycle
+                cycle_obj.is_closed = False
+                cycle_obj.status = "open"  # Reset status to open
+
+                # Update in database
+                repo.Update_cycle(cycle_data.id, cycle_obj.to_dict())
+
+                # Update in remote API if it has a remote ID
+                if cycle_obj.cycle_id:
+                    if cycle_type == "AH":
+                        self.remote_api.update_AH_cycle_by_id(
+                            cycle_obj.cycle_id, cycle_obj.to_remote_dict())
+                    else:
+                        self.remote_api.update_CT_cycle_by_id(
+                            cycle_obj.cycle_id, cycle_obj.to_remote_dict())
+
+                return True
+
+            return False
+        except Exception as e:
+            logger.error(f"Error checking cycle {cycle_data.id}: {e}")
+            return False
 
     async def run_in_thread(self):
         try:

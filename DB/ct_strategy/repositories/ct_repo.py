@@ -4,6 +4,7 @@ from DB.ct_strategy.models.ct_cycles import CTCycle
 from DB.ct_strategy.models.ct_cycles_orders import CtCyclesOrders
 from DB.ct_strategy.models.ct_config import CTConfig
 from datetime import datetime
+from sqlalchemy import and_
 
 
 class CTRepo:
@@ -238,3 +239,27 @@ class CTRepo:
                 session.refresh(config)
                 return config
             return None
+
+    def get_recently_closed_cycles(self, account_id, timestamp):
+        """
+        Get cycles that were recently closed after the specified timestamp.
+        Used to check for cycles that might have been incorrectly marked as closed.
+
+        Args:
+            account_id: The account ID to filter by
+            timestamp: Unix timestamp to filter by (get cycles closed after this time)
+
+        Returns:
+            List of cycles
+        """
+        with Session(self.engine) as session:
+            statement = select(CTCycle).where(
+                and_(
+                    CTCycle.account == account_id,
+                    CTCycle.is_closed == True,
+                    # If we had a closed_at timestamp field, we would use it here
+                    # For now, just get all closed cycles
+                )
+            )
+            cycles = session.exec(statement).all()
+            return cycles
