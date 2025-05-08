@@ -27,6 +27,19 @@ load_dotenv()
 db_path = os.path.join(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))), 'database.db')
 
+# Ensure database directory exists
+db_directory = os.path.dirname(db_path)
+if not os.path.exists(db_directory):
+    os.makedirs(db_directory)
+
+# Check if database file exists
+if not os.path.exists(db_path):
+    logger.info(
+        f"Database file does not exist. Creating new database at {db_path}")
+    # Create an empty file to ensure the database can be created
+    with open(db_path, 'w') as f:
+        pass  # Just create an empty file
+
 # db connection string
 sqlite_url = f"sqlite:///{db_path}"
 
@@ -37,24 +50,36 @@ engine = create_engine(sqlite_url, echo=False)
 
 
 def create_db_and_tables():
-    # Create all tables based on the models
-    SQLModel.metadata.create_all(engine)
+    try:
+        # Check if this is the first time creating the database
+        is_new_db = not os.path.exists(
+            db_path) or os.path.getsize(db_path) == 0
 
-    # After creating tables, run migrations if database file exists
-    if os.path.exists(db_path):
-        logger.info("Running database migrations...")
-        try:
-            # Import and run the migration script
-            from DB.migrate_ct_cycles import migrate_ct_cycles
-            migrate_ct_cycles()
+        # Create all tables based on the models
+        logger.info("Creating database tables...")
+        SQLModel.metadata.create_all(engine)
 
-            # Run the CT config migration
-            from DB.migrate_ct_config import run_migration
-            run_migration()
+        if is_new_db:
+            logger.info("New database created successfully")
+        # After creating tables, run migrations if database file exists and is not new
+        elif os.path.exists(db_path) and not is_new_db:
+            logger.info("Running database migrations...")
+            try:
+                # Import and run the migration script
+                from DB.migrate_ct_cycles import migrate_ct_cycles
+                migrate_ct_cycles()
 
-            logger.info("Database migrations completed successfully.")
-        except Exception as e:
-            logger.error(f"Error running database migrations: {e}")
+                # Run the CT config migration
+                from DB.migrate_ct_config import run_migration
+                run_migration()
+
+                logger.info("Database migrations completed successfully.")
+            except Exception as e:
+                logger.error(f"Error running database migrations: {e}")
+                logger.exception("Migration error details:")
+    except Exception as e:
+        logger.error(f"Error creating database and tables: {e}")
+        logger.exception("Database creation error details:")
 
 # Connect to the db
 

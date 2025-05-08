@@ -15,7 +15,7 @@ import asyncio
 from DB.remote_login.repositories.remote_login_repo import RemoteLoginRepo
 
 from Views.auth.auth import login
-from DB.db_engine import engine
+from DB.db_engine import engine, create_db_and_tables
 from helpers.store import store
 
 import multiprocessing
@@ -66,4 +66,14 @@ def terminate_all_processes():
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
+
+    # Ensure database is initialized before starting the app
+    try:
+        app_logger.info("Initializing database...")
+        create_db_and_tables()
+        app_logger.info("Database initialization complete")
+    except Exception as e:
+        app_logger.error(f"Database initialization error: {e}")
+        # Continue with app startup even if database initialization fails
+
     flet.app(main)
