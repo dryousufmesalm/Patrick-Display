@@ -53,76 +53,76 @@ class CycleTrader(Strategy):
         """ Initialize the CycleTrader strategy """
         self.update_configs(config, settings)
 
-        # Try to load configuration from database
-        try:
-            db_config = self.local_api.get_config(
-                symbol=self.symbol,
-                bot_id=self.bot.id,
-                account_id=self.meta_trader.account_id
-            )
+        # # Try to load configuration from database
+        # try:
+        #     db_config = self.local_api.get_config(
+        #         symbol=self.symbol,
+        #         bot_id=self.bot.id,
+        #         account_id=self.meta_trader.account_id
+        #     )
 
-            if db_config:
-                # Convert database config to dictionary
-                config_dict = {
-                    "enable_recovery": db_config.enable_recovery,
-                    "lot_sizes": db_config.lot_sizes,
-                    "pips_step": db_config.pips_step,
-                    "slippage": db_config.slippage,
-                    "sltp": db_config.sltp,
-                    "take_profit": db_config.take_profit,
-                    "zone_array": db_config.zones,
-                    "zone_forward": db_config.zone_forward,
-                    "zone_forward2": db_config.zone_forward2,
-                    "symbol": db_config.symbol,
-                    "max_cycles": db_config.max_cycles,
-                    "autotrade": db_config.autotrade,
-                    "autotrade_threshold": db_config.autotrade_threshold,
-                    "hedges_numbers": db_config.hedges_numbers,
-                    "buy_and_sell_add_to_pnl": db_config.buy_and_sell_add_to_pnl,
-                    "autotrade_pips_restriction": db_config.autotrade_pips_restriction,
-                    "auto_candle_close": db_config.auto_candle_close,
-                    "candle_timeframe": db_config.candle_timeframe,
-                    "hedge_sl": db_config.hedge_sl,
-                    "prevent_opposing_trades": db_config.prevent_opposing_trades
-                }
+        #     if db_config:
+        #         # Convert database config to dictionary
+        #         config_dict = {
+        #             "enable_recovery": db_config.enable_recovery,
+        #             "lot_sizes": db_config.lot_sizes,
+        #             "pips_step": db_config.pips_step,
+        #             "slippage": db_config.slippage,
+        #             "sltp": db_config.sltp,
+        #             "take_profit": db_config.take_profit,
+        #             "zone_array": db_config.zones,
+        #             "zone_forward": db_config.zone_forward,
+        #             "zone_forward2": db_config.zone_forward2,
+        #             "symbol": db_config.symbol,
+        #             "max_cycles": db_config.max_cycles,
+        #             "autotrade": db_config.autotrade,
+        #             "autotrade_threshold": db_config.autotrade_threshold,
+        #             "hedges_numbers": db_config.hedges_numbers,
+        #             "buy_and_sell_add_to_pnl": db_config.buy_and_sell_add_to_pnl,
+        #             "autotrade_pips_restriction": db_config.autotrade_pips_restriction,
+        #             "auto_candle_close": db_config.auto_candle_close,
+        #             "candle_timeframe": db_config.candle_timeframe,
+        #             "hedge_sl": db_config.hedge_sl,
+        #             "prevent_opposing_trades": db_config.prevent_opposing_trades
+        #         }
 
-                # Update config with database values
-                self.update_configs(config_dict, settings)
-                logger.info(
-                    f"Loaded configuration from database for {self.symbol}")
-            else:
-                # Create default configuration in database
-                config_dict = {
-                    "symbol": self.symbol,
-                    "bot_id": self.bot.id,
-                    "account_id": self.meta_trader.account_id,
-                    "enable_recovery": self.enable_recovery,
-                    "lot_sizes": self.lot_sizes,
-                    "pips_step": self.pips_step,
-                    "slippage": self.slippage,
-                    "sltp": self.sltp,
-                    "take_profit": self.take_profit,
-                    "zones": self.zones,
-                    "zone_forward": self.zone_forward,
-                    "zone_forward2": self.zone_forward2,
-                    "max_cycles": self.max_cycles,
-                    "autotrade": self.autotrade,
-                    "autotrade_threshold": self.autotrade_threshold,
-                    "hedges_numbers": self.hedges_numbers,
-                    "buy_and_sell_add_to_pnl": self.ADD_All_to_PNL,
-                    "autotrade_pips_restriction": self.autotrade_pips_restriction,
-                    "auto_candle_close": self.auto_candle_close,
-                    "candle_timeframe": self.candle_timeframe,
-                    "hedge_sl": self.hedge_sl,
-                    "prevent_opposing_trades": self.prevent_opposing_trades
-                }
+        #         # Update config with database values
+        #         self.update_configs(config_dict, settings)
+        #         logger.info(
+        #             f"Loaded configuration from database for {self.symbol}")
+        #     else:
+        #         # Create default configuration in database
+        #         config_dict = {
+        #             "symbol": self.symbol,
+        #             "bot_id": self.bot.id,
+        #             "account_id": self.meta_trader.account_id,
+        #             "enable_recovery": self.enable_recovery,
+        #             "lot_sizes": self.lot_sizes,
+        #             "pips_step": self.pips_step,
+        #             "slippage": self.slippage,
+        #             "sltp": self.sltp,
+        #             "take_profit": self.take_profit,
+        #             "zones": self.zones,
+        #             "zone_forward": self.zone_forward,
+        #             "zone_forward2": self.zone_forward2,
+        #             "max_cycles": self.max_cycles,
+        #             "autotrade": self.autotrade,
+        #             "autotrade_threshold": self.autotrade_threshold,
+        #             "hedges_numbers": self.hedges_numbers,
+        #             "buy_and_sell_add_to_pnl": self.ADD_All_to_PNL,
+        #             "autotrade_pips_restriction": self.autotrade_pips_restriction,
+        #             "auto_candle_close": self.auto_candle_close,
+        #             "candle_timeframe": self.candle_timeframe,
+        #             "hedge_sl": self.hedge_sl,
+        #             "prevent_opposing_trades": self.prevent_opposing_trades
+        #         }
 
-                self.local_api.create_config(config_dict)
-                logger.info(
-                    f"Created default configuration in database for {self.symbol}")
-        except Exception as e:
-            logger.error(f"Error loading configuration from database: {e}")
-            # Continue with the configuration from parameter
+        #         self.local_api.create_config(config_dict)
+        # logger.info(
+        #     f"Created default configuration in database for {self.symbol}")
+        # except Exception as e:
+        #     logger.error(f"Error loading configuration from database: {e}")
+        # Continue with the configuration from parameter
 
     def init_settings(self):
         """ Initialize the settings for the CycleTrader strategy """
@@ -465,6 +465,7 @@ class CycleTrader(Strategy):
     async def open_new_cycle(self, active_cycles, cycles_Restrition):
         """
         Open new cycle automatically every threshold pips from the last cycle with limit max cycles.
+        Only allows one buy cycle and one sell cycle per level.
         """
         try:
             if len(active_cycles) < self.max_cycles:
@@ -473,28 +474,80 @@ class CycleTrader(Strategy):
                 pips = self.meta_trader.get_pips(self.symbol)
                 up_price = self.last_cycle_price+self.autotrade_threshold*pips
                 down_price = self.last_cycle_price-self.autotrade_threshold*pips
-                if ask >= up_price :
+
+                # Check for existing buy/sell cycles at current level
+                buy_exists_at_level = False
+                sell_exists_at_level = False
+
+                # Calculate a more appropriate level buffer based on the price scale
+                # For high-value symbols like Bitcoin, we need a larger absolute buffer
+                # Use 0.1% of the current price as a minimum buffer
+                price_scale_buffer = self.autotrade_pips_restriction * pips
+
+                self.logger.info(
+                    f"Level buffer for {self.symbol}: {price_scale_buffer} (price: {ask}, pips: {pips})")
+
+                # Check existing cycles to see if there's already a buy or sell at this level
+                for cycle_data in active_cycles:
+                    cycle_obj = cycle(cycle_data, self.meta_trader, self, "db")
+
+                    # Check if the cycle is at current level using the adaptive buffer
+                    is_at_up_level = abs(
+                        cycle_obj.open_price - up_price) <= price_scale_buffer
+                    is_at_down_level = abs(
+                        cycle_obj.open_price - down_price) <= price_scale_buffer
+
+                    # Also check if it's close to the current price level (for existing cycles)
+                    is_at_current_level = False
+
+                    # For BUY cycles, check against existing BUY cycles
+                    if ask >= up_price and cycle_obj.cycle_type == "BUY":
+                        is_at_current_level = abs(
+                            cycle_obj.open_price - ask) <= price_scale_buffer
+
+                    # For SELL cycles, check against existing SELL cycles
+                    elif bid <= down_price and cycle_obj.cycle_type == "SELL":
+                        is_at_current_level = abs(
+                            cycle_obj.open_price - bid) <= price_scale_buffer
+
+                    if is_at_up_level or is_at_down_level or is_at_current_level:
+                        if cycle_obj.cycle_type == "BUY":
+                            buy_exists_at_level = True
+                            self.logger.info(
+                                f"BUY cycle already exists at level: {cycle_obj.open_price}")
+                        elif cycle_obj.cycle_type == "SELL":
+                            sell_exists_at_level = True
+                            self.logger.info(
+                                f"SELL cycle already exists at level: {cycle_obj.open_price}")
+
+                if ask >= up_price:
                     self.last_cycle_price = ask if ask >= up_price else bid if bid <= down_price else 0
-                    # Check if autotrade is enabled AND either restrictions are disabled (value = 0) OR passed the check
-                    if self.autotrade and (self.autotrade_pips_restriction == 0 or cycles_Restrition == False):
+                    # Check if autotrade is enabled AND restrictions pass AND no buy cycle exists at this level
+                    if self.autotrade and (self.autotrade_pips_restriction == 0 or cycles_Restrition == False) and not buy_exists_at_level:
                         if self.stop is False:
                             order1 = self.meta_trader.buy(
                                 self.symbol, self.lot_sizes[0], self.bot.magic, 0, 0, "PIPS", self.slippage, "initial")
-                            # order2 = self.meta_trader.sell(
-                            #     self.symbol, self.lot_sizes[0], self.bot.magic, 0, 0, "PIPS", self.slippage, "initial")
                             await self.create_cycle(order1, None, False,
                                                     False, 0, "MetaTrader5", "BUY")
+                            self.logger.info(
+                                f"Opened new BUY cycle at price: {order1[0].price_open}")
+                    elif buy_exists_at_level:
+                        self.logger.info(
+                            f"Skipped opening BUY cycle - already exists at this level")
                 elif bid <= down_price:
                     self.last_cycle_price = ask if ask >= up_price else bid if bid <= down_price else 0
-                    # Check if autotrade is enabled AND either restrictions are disabled (value = 0) OR passed the check
-                    if self.autotrade and (self.autotrade_pips_restriction == 0 or cycles_Restrition == False):
+                    # Check if autotrade is enabled AND restrictions pass AND no sell cycle exists at this level
+                    if self.autotrade and (self.autotrade_pips_restriction == 0 or cycles_Restrition == False) and not sell_exists_at_level:
                         if self.stop is False:
                             order1 = self.meta_trader.sell(
                                 self.symbol, self.lot_sizes[0], self.bot.magic, 0, 0, "PIPS", self.slippage, "initial")
-                            # order2 = self.meta_trader.sell(
-                            #     self.symbol, self.lot_sizes[0], self.bot.magic, 0, 0, "PIPS", self.slippage, "initial")
                             await self.create_cycle(order1, None, False,
                                                     False, 0, "MetaTrader5", "SELL")
+                            self.logger.info(
+                                f"Opened new SELL cycle at price: {order1[0].price_open}")
+                    elif sell_exists_at_level:
+                        self.logger.info(
+                            f"Skipped opening SELL cycle - already exists at this level")
         except Exception as e:
             self.logger.error(f"Error opening new cycle: {e}")
 
