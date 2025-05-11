@@ -6,5 +6,5 @@ class AppConfigs(BaseSettings):
     app_name: str = "Patrick App"
     app_version: str = "1.0.0"
     # Pocketbase configs
-    pb_url: str = "https://demo.fppatrading.com"  # the pocketbase url
+    pb_url: str = "https://pdapps.fppatrading.com"  # the pocketbase url
     auth_collection: str = "users"  # the collection to authenticate with, ex: 'users'
