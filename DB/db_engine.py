@@ -24,9 +24,8 @@ load_dotenv()
 # Import db models
 
 # Create the database file path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_dir = os.path.dirname(current_dir)
-db_path = os.path.join(project_dir, 'database.db')
+
+db_path = os.path.join(os.getcwd(), 'database.db')
 
 print(f"Database will be created at: {db_path}")
 
