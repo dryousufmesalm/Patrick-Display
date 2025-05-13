@@ -504,11 +504,11 @@ class cycle:
             # Check if the cycle is in the initial phase
             if (self.cycle_type == "BUY"):
                 if len(self.hedge) == 0:
-                    if ask > self.open_price+self.bot.hedge_sl*self.mt5.get_pips(self.symbol):
+                    if bid < self.open_price-self.bot.hedge_sl*self.mt5.get_pips(self.symbol):
                         self.hedge_buy_order()
             if (self.cycle_type == "SELL"):
                 if len(self.hedge) == 0:
-                    if bid < self.open_price-self.bot.hedge_sl*self.mt5.get_pips(self.symbol):
+                    if ask > self.open_price+self.bot.hedge_sl*self.mt5.get_pips(self.symbol):
                         self.hedge_sell_order()
             if ask > self.upper_bound:
                 total_sell = self.count_initial_sell_orders()
