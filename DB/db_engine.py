@@ -24,21 +24,34 @@ load_dotenv()
 # Import db models
 
 # Create the database file path
-db_path = os.path.join(os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__))), 'database.db')
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_dir = os.path.dirname(current_dir)
+db_path = os.path.join(project_dir, 'database.db')
+
+print(f"Database will be created at: {db_path}")
 
 # Ensure database directory exists
 db_directory = os.path.dirname(db_path)
 if not os.path.exists(db_directory):
     os.makedirs(db_directory)
+    print(f"Created database directory: {db_directory}")
 
 # Check if database file exists
 if not os.path.exists(db_path):
     logger.info(
         f"Database file does not exist. Creating new database at {db_path}")
+    print(f"Creating new empty database file at: {db_path}")
     # Create an empty file to ensure the database can be created
-    with open(db_path, 'w') as f:
-        pass  # Just create an empty file
+    try:
+        with open(db_path, 'w') as f:
+            pass  # Just create an empty file
+        print(f"Empty database file created successfully")
+    except Exception as e:
+        print(f"ERROR: Failed to create database file: {e}")
+        logger.error(f"Failed to create database file: {e}")
+        logger.exception("Database file creation error details:")
+else:
+    print(f"Database file already exists at: {db_path}")
 
 # db connection string
 sqlite_url = f"sqlite:///{db_path}"
@@ -91,3 +104,11 @@ def get_session():
 
 
 create_db_and_tables()
+
+# Ensure database is created when this module is imported
+if __name__ == "__main__":
+    print("DB module running directly, creating database...")
+    create_db_and_tables()
+else:
+    print("DB module imported, creating database tables...")
+    create_db_and_tables()
