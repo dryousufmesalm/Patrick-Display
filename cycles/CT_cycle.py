@@ -542,37 +542,37 @@ class cycle:
         elif self.status in ["recovery", "max_recovery"]:
             self.go_hedge_direction()
 
-        # Zone forward threshold ordering logic
-        if self.current_direction == "BUY":
-            # When in BUY mode, check if we should place a new buy order at threshold upper
-            if ask >= self.threshold_upper and len(self.hedge) > 0:
-                next_price_level = self.threshold_upper + \
-                    threshold2 * self.mt5.get_pips(self.symbol)
+            # Zone forward threshold ordering logic
+            if self.current_direction == "BUY":
+                # When in BUY mode, check if we should place a new buy order at threshold upper
+                if ask >= self.threshold_upper and len(self.hedge) > 0:
+                    next_price_level = self.threshold_upper + \
+                        threshold2 * self.mt5.get_pips(self.symbol)
 
-                # Only place the order if this price level hasn't been marked as "done"
-                if not self.should_skip_price_level(next_price_level, "BUY"):
-                    lot_size_index = min(self.next_order_index, len(
-                        self.bot.lot_sizes) - 1) if hasattr(self.bot, 'lot_sizes') else 0
-                    self.threshold_buy_order(next_price_level, lot_size_index)
-                    self.next_order_index = min(self.next_order_index + 1, len(
-                        self.bot.lot_sizes) - 1) if hasattr(self.bot, 'lot_sizes') else 0
+                    # Only place the order if this price level hasn't been marked as "done"
+                    if not self.should_skip_price_level(next_price_level, "BUY"):
+                        lot_size_index = min(self.next_order_index, len(
+                            self.bot.lot_sizes) - 1) if hasattr(self.bot, 'lot_sizes') else 0
+                        self.threshold_buy_order(next_price_level, lot_size_index)
+                        self.next_order_index = min(self.next_order_index + 1, len(
+                            self.bot.lot_sizes) - 1) if hasattr(self.bot, 'lot_sizes') else 0
 
-        elif self.current_direction == "SELL":
-            # When in SELL mode, check if we should place a new sell order at threshold lower
-            if bid <= self.threshold_lower and len(self.hedge) > 0:
-                next_price_level = self.threshold_lower - \
-                    threshold2 * self.mt5.get_pips(self.symbol)
+            elif self.current_direction == "SELL":
+                # When in SELL mode, check if we should place a new sell order at threshold lower
+                if bid <= self.threshold_lower and len(self.hedge) > 0:
+                    next_price_level = self.threshold_lower - \
+                        threshold2 * self.mt5.get_pips(self.symbol)
 
-                # Only place the order if this price level hasn't been marked as "done"
-                if not self.should_skip_price_level(next_price_level, "SELL"):
-                    lot_size_index = min(self.next_order_index, len(
-                        self.bot.lot_sizes) - 1) if hasattr(self.bot, 'lot_sizes') else 0
-                    self.threshold_sell_order(next_price_level, lot_size_index)
-                    self.next_order_index = min(self.next_order_index + 1, len(
-                        self.bot.lot_sizes) - 1) if hasattr(self.bot, 'lot_sizes') else 0
+                    # Only place the order if this price level hasn't been marked as "done"
+                    if not self.should_skip_price_level(next_price_level, "SELL"):
+                        lot_size_index = min(self.next_order_index, len(
+                            self.bot.lot_sizes) - 1) if hasattr(self.bot, 'lot_sizes') else 0
+                        self.threshold_sell_order(next_price_level, lot_size_index)
+                        self.next_order_index = min(self.next_order_index + 1, len(
+                            self.bot.lot_sizes) - 1) if hasattr(self.bot, 'lot_sizes') else 0
 
-        # Reposition thresholds based on existing orders
-        self.threshold_Reposition(threshold2)
+            # Reposition thresholds based on existing orders
+            self.threshold_Reposition(threshold2)
 
     def close_initial_buy_orders(self):
         total_initial = len(self.initial)
