@@ -520,9 +520,9 @@ class cycle:
                     self.base_threshold_upper = self.upper_bound + \
                         threshold * self.mt5.get_pips(self.symbol)
                     self.threshold_upper = self.base_threshold_upper
+                    self.status = "recovery"
                     self.hedge_sell_order()
                     self.recovery_sell_order()
-                    self.status = "recovery"
                     self.update_CT_cycle()
             elif bid < self.lower_bound:
                 total_buy = self.count_initial_buy_orders()
@@ -534,9 +534,9 @@ class cycle:
                     self.base_threshold_upper = self.open_price + \
                         threshold * self.mt5.get_pips(self.symbol)
                     self.threshold_upper = self.base_threshold_upper
+                    self.status = "recovery"
                     self.hedge_buy_order()
                     self.recovery_buy_order()
-                    self.status = "recovery"
                     self.update_CT_cycle()
 
         elif self.status in ["recovery", "max_recovery"]:
@@ -553,7 +553,8 @@ class cycle:
                     if not self.should_skip_price_level(next_price_level, "BUY"):
                         lot_size_index = min(self.next_order_index, len(
                             self.bot.lot_sizes) - 1) if hasattr(self.bot, 'lot_sizes') else 0
-                        self.threshold_buy_order(next_price_level, lot_size_index)
+                        self.threshold_buy_order(
+                            next_price_level, lot_size_index)
                         self.next_order_index = min(self.next_order_index + 1, len(
                             self.bot.lot_sizes) - 1) if hasattr(self.bot, 'lot_sizes') else 0
 
@@ -567,7 +568,8 @@ class cycle:
                     if not self.should_skip_price_level(next_price_level, "SELL"):
                         lot_size_index = min(self.next_order_index, len(
                             self.bot.lot_sizes) - 1) if hasattr(self.bot, 'lot_sizes') else 0
-                        self.threshold_sell_order(next_price_level, lot_size_index)
+                        self.threshold_sell_order(
+                            next_price_level, lot_size_index)
                         self.next_order_index = min(self.next_order_index + 1, len(
                             self.bot.lot_sizes) - 1) if hasattr(self.bot, 'lot_sizes') else 0
 
@@ -668,10 +670,11 @@ class cycle:
             order_obj = order(
                 hedge_order[0], False, self.mt5, self.local_api, "mt5", self.id)
             order_obj.create_order()
-            self.lower_bound = float(hedge_order[0].price_open) - float(
-                self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
-            self.upper_bound = float(hedge_order[0].price_open) + float(
-                self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
+            if self.status != "initial":
+                self.lower_bound = float(hedge_order[0].price_open) - float(
+                    self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
+                self.upper_bound = float(hedge_order[0].price_open) + float(
+                    self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
 
         # update the upper and lower by the zone index
     def recovery_buy_order(self):
@@ -746,10 +749,11 @@ class cycle:
                 hedge_order[0], False, self.mt5, self.local_api, "mt5", self.id)
             order_obj.create_order()
             # update the upper and lower by the zone index
-            self.lower_bound = float(hedge_order[0].price_open) - float(
-                self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
-            self.upper_bound = float(hedge_order[0].price_open) + float(
-                self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
+            if self.status != "initial":
+                self.lower_bound = float(hedge_order[0].price_open) - float(
+                    self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
+                self.upper_bound = float(hedge_order[0].price_open) + float(
+                    self.bot.zones[self.zone_index]) * float(self.mt5.get_pips(self.symbol))
 
     def recovery_sell_order(self):
         # recovery order
