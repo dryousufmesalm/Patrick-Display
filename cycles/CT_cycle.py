@@ -513,17 +513,25 @@ class cycle:
             if ask > self.upper_bound:
                 total_sell = self.count_initial_sell_orders()
                 if total_sell >= 1:
-                    self.close_initial_buy_orders()
                     self.base_threshold_lower = self.open_price - \
                         threshold * self.mt5.get_pips(self.symbol)
                     self.threshold_lower = self.base_threshold_lower
                     self.base_threshold_upper = self.upper_bound + \
                         threshold * self.mt5.get_pips(self.symbol)
                     self.threshold_upper = self.base_threshold_upper
+                    self.close_initial_buy_orders()
                     self.status = "recovery"
                     self.hedge_sell_order()
                     self.recovery_sell_order()
                     self.update_CT_cycle()
+                else:
+                    self.status = "recovery"
+                    self.base_threshold_lower = self.open_price - \
+                        threshold * self.mt5.get_pips(self.symbol)
+                    self.threshold_lower = self.base_threshold_lower
+                    self.base_threshold_upper = self.upper_bound + \
+                        threshold * self.mt5.get_pips(self.symbol)
+                    self.threshold_upper = self.base_threshold_upper
             elif bid < self.lower_bound:
                 total_buy = self.count_initial_buy_orders()
                 if total_buy >= 1:
@@ -538,6 +546,14 @@ class cycle:
                     self.hedge_buy_order()
                     self.recovery_buy_order()
                     self.update_CT_cycle()
+                else:
+                    self.status = "recovery"
+                    self.base_threshold_lower = self.lower_bound - \
+                        threshold * self.mt5.get_pips(self.symbol)
+                    self.threshold_lower = self.base_threshold_lower
+                    self.base_threshold_upper = self.open_price + \
+                        threshold * self.mt5.get_pips(self.symbol)
+                    self.threshold_upper = self.base_threshold_upper
 
         elif self.status in ["recovery", "max_recovery"]:
             self.go_hedge_direction()
