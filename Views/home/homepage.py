@@ -21,7 +21,7 @@ class HomePageView(Xview):
         add_account_button = flet.ElevatedButton(
             text="Add User",
             expand=False,
-            on_click=lambda e: self.go(AppRoutes.LOGIN_PB),
+            on_click=lambda e: self.go(AppRoutes.LOGIN_SUPABASE),
             width=300,
         )
 

@@ -1,223 +1,116 @@
-from sqlmodel import Session, select
-from sqlalchemy.exc import SQLAlchemyError
-from DB.ah_strategy.models.ah_cycles import AHCycle
-from DB.ah_strategy.models.ah_cycles_orders import AhCyclesOrders
-from datetime import datetime
-from sqlalchemy import and_
+"""
+AdaptiveHedging Repository - Compatibility layer for Supabase
+"""
+
+import asyncio
+import logging
+from typing import Dict, List, Optional, Any
+from services.supabase_service import SupabaseService
+
+logger = logging.getLogger(__name__)
 
 
 class AHRepo:
-    def __init__(self, engine):
+    """
+    AdaptiveHedging Repository compatibility layer
+    Wraps Supabase operations to maintain compatibility with legacy code
+    """
+
+    def __init__(self, engine=None):
+        """Initialize with legacy engine (compatibility)"""
         self.engine = engine
+        self.supabase_service = None
+        self._initialized = False
 
-    def get_cycle(self) -> AHCycle | None:
-        with Session(self.engine) as session:
-            result = session.get(AHCycle, 1)
-            return result
+    async def _ensure_initialized(self):
+        """Ensure Supabase service is initialized"""
+        if not self._initialized:
+            try:
+                if self.engine and hasattr(self.engine, 'get_supabase_service'):
+                    self.supabase_service = self.engine.get_supabase_service()
+                else:
+                    self.supabase_service = SupabaseService()
+                    await self.supabase_service.initialize()
+                self._initialized = True
+            except Exception as e:
+                logger.error(f"Failed to initialize AHRepo: {e}")
 
-    def get_cycle_by_id(self, id) -> AHCycle | None:
-        with Session(self.engine) as session:
-            result = session.get(AHCycle, id)
-            return result
-
-    def get_cycle_by_remote_id(self, remote_id) -> AHCycle | None:
-        with Session(self.engine) as session:
-            result = session.exec(select(AHCycle).where(
-                AHCycle.remote_id == remote_id)).first()
-            return result
-
-    def get_active_cycles(self, bot) -> list[AHCycle] | None:
-        """
-        Retrieve all active cycles for a given account.
-
-        :param account: The account to filter active cycles.
-        :return: A list of active AHCycle objects or None.
-        """
-        with Session(self.engine) as session:
-            cycles = session.exec(select(AHCycle).where(
-                AHCycle.is_closed == False and AHCycle.bot == bot
-            )).all()
-
-            active_cycles = [cycle for cycle in cycles if cycle.bot == bot]
-            return active_cycles
-
-    def get_all_cycles(self) -> list[AHCycle] | None:
-        with Session(self.engine) as session:
-            result = session.exec(select(AHCycle)).all()
-            return result
-
-    def create_cycle(self, cycle_data) -> AHCycle | None:
+    def get_cycle_by_id(self, cycle_id: str) -> Optional[Dict]:
+        """Get cycle by ID - compatibility method"""
         try:
-            with Session(self.engine) as session:
-                new_cycle = AHCycle(**cycle_data)
-                session.add(new_cycle)
-                session.commit()
-                session.refresh(new_cycle)
-                return new_cycle
-        except SQLAlchemyError as e:
-            print(f"Failed to create AH cycle: {e}")
+            return asyncio.run(self._async_get_cycle_by_id(cycle_id))
+        except Exception as e:
+            logger.error(f"Error getting cycle {cycle_id}: {e}")
             return None
 
-    def Update_cycle(self, id, cycle_data) -> AHCycle | None:
+    async def _async_get_cycle_by_id(self, cycle_id: str) -> Optional[Dict]:
+        """Async implementation of get_cycle_by_id"""
+        await self._ensure_initialized()
+
         try:
-            with Session(self.engine) as session:
-                cycle = session.get(AHCycle,    id)
-                if cycle:
-                    for key, value in cycle_data.items():
-                        setattr(cycle, key, value)
-                    session.add(cycle)
-                    session.commit()
-                    session.refresh(cycle)
-                    return cycle
-                return None
-        except SQLAlchemyError as e:
-            print(f"Failed to update AH cycle: {e}")
+            if self.supabase_service:
+                result = await self.supabase_service.get_cycle_by_id(cycle_id)
+                return result
+        except Exception as e:
+            logger.error(f"Error in async get_cycle_by_id: {e}")
+        return None
+
+    def create_cycle(self, cycle_data: Dict) -> Optional[str]:
+        """Create cycle - compatibility method"""
+        try:
+            return asyncio.run(self._async_create_cycle(cycle_data))
+        except Exception as e:
+            logger.error(f"Error creating cycle: {e}")
             return None
 
-    def update_cycle_by_remote_id(self, remote_id, cycle_data) -> AHCycle | None:
+    async def _async_create_cycle(self, cycle_data: Dict) -> Optional[str]:
+        """Async implementation of create_cycle"""
+        await self._ensure_initialized()
+
         try:
-            with Session(self.engine) as session:
-                cycle = self.get_cycle_by_remote_id(remote_id)
-                if cycle:
-                    for key, value in cycle_data.items():
-                        setattr(cycle, key, value)
-                    session.add(cycle)
-                    session.commit()
-                    session.refresh(cycle)
-                    return cycle
-                return None
-        except SQLAlchemyError as e:
-            print(f"Failed to update AH cycle: {e}")
-            return None
+            if self.supabase_service:
+                result = await self.supabase_service.create_cycle(cycle_data)
+                return result.get('id') if result else None
+        except Exception as e:
+            logger.error(f"Error in async create_cycle: {e}")
+        return None
 
-    def close_cycle(self, cycle_id) -> AHCycle | None:
+    def update_cycle(self, cycle_id: str, cycle_data: Dict) -> bool:
+        """Update cycle - compatibility method"""
         try:
-            with Session(self.engine) as session:
-                cycle = session.get(AHCycle, cycle_id)
-                if cycle:
-                    cycle.is_closed = True
-                    session.add(cycle)
-                    session.commit()
-                    session.refresh(cycle)
-                    return cycle
-                return None
-        except SQLAlchemyError as e:
-            print(f"Failed to close AH cycle: {e}")
-            return None
+            return asyncio.run(self._async_update_cycle(cycle_id, cycle_data))
+        except Exception as e:
+            logger.error(f"Error updating cycle {cycle_id}: {e}")
+            return False
 
-    def create_order(self, order_data) -> AhCyclesOrders | None:
+    async def _async_update_cycle(self, cycle_id: str, cycle_data: Dict) -> bool:
+        """Async implementation of update_cycle"""
+        await self._ensure_initialized()
+
         try:
-            with Session(self.engine) as session:
-                new_order = AhCyclesOrders(**order_data)
-                session.add(new_order)
-                session.commit()
-                session.refresh(new_order)
-                return new_order
-        except SQLAlchemyError as e:
-            print(f"Failed to create AH order: {e}")
-            return None
+            if self.supabase_service:
+                result = await self.supabase_service.update_cycle(cycle_id, cycle_data)
+                return result is not None
+        except Exception as e:
+            logger.error(f"Error in async update_cycle: {e}")
+        return False
 
-    def close_order(self, order_id) -> AhCyclesOrders | None:
+    def get_cycles_by_account(self, account_id: str) -> List[Dict]:
+        """Get cycles by account - compatibility method"""
         try:
-            with Session(self.engine) as session:
-                order = session.get(AhCyclesOrders, order_id)
-                if order:
-                    order.is_closed = True
-                    session.add(order)
-                    session.commit()
-                    session.refresh(order)
-                    return order
-                return None
-        except SQLAlchemyError as e:
-            print(f"Failed to close AH order: {e}")
-            return None
+            return asyncio.run(self._async_get_cycles_by_account(account_id))
+        except Exception as e:
+            logger.error(f"Error getting cycles for account {account_id}: {e}")
+            return []
 
-    def get_order_by_ticket(self, ticket) -> AhCyclesOrders | None:
-        with Session(self.engine) as session:
-            result = session.exec(select(AhCyclesOrders).where(
-                AhCyclesOrders.ticket == ticket)).first()
-            return result
+    async def _async_get_cycles_by_account(self, account_id: str) -> List[Dict]:
+        """Async implementation of get_cycles_by_account"""
+        await self._ensure_initialized()
 
-    def get_order_by_id(self, id) -> list[AhCyclesOrders] | None:
-        with Session(self.engine) as session:
-            result = session.get(AhCyclesOrders, id)
-            return result
-
-    def get_orders_by_cycle_id(self, cycle_id) -> list[AhCyclesOrders] | None:
-        with Session(self.engine) as session:
-            result = session.exec(select(AhCyclesOrders).where(
-                AhCyclesOrders.cycle_id == cycle_id)).all()
-            return result
-
-    def get_open_pending_orders(self) -> list[AhCyclesOrders] | None:
-        with Session(self.engine) as session:
-            result = session.exec(select(AhCyclesOrders).where(
-                AhCyclesOrders.is_closed == False and AhCyclesOrders.is_pending == True)).all()
-            return result
-
-    def get_all_orders(self) -> list[AhCyclesOrders] | None:
-        with Session(self.engine) as session:
-            result = session.exec(select(AhCyclesOrders)).all()
-            return result
-
-    def get_open_orders_only(self) -> list[AhCyclesOrders] | None:
-        with Session(self.engine) as session:
-            result = session.exec(select(AhCyclesOrders).where(
-                AhCyclesOrders.is_closed == False)).all()
-            return result
-
-    def update_order_by_ticket(self, ticket, order_data) -> AhCyclesOrders | None:
         try:
-            with Session(self.engine) as session:
-                order = self.get_order_by_ticket(ticket)
-                if order:
-                    for key, value in order_data.items():
-                        setattr(order, key, value)
-                    session.add(order)
-                    session.commit()
-                    session.refresh(order)
-                    return order
-                return None
-        except SQLAlchemyError as e:
-            print(f"Failed to update AH order: {e}")
-            return None
-
-    def update_order_by_id(self, id, order_data) -> AhCyclesOrders | None:
-        try:
-            with Session(self.engine) as session:
-                order = session.get(AhCyclesOrders, id)
-                if order:
-                    for key, value in order_data.items():
-                        setattr(order, key, value)
-                    session.add(order)
-                    session.commit()
-                    session.refresh(order)
-                    return order
-                return None
-        except SQLAlchemyError as e:
-            print(f"Failed to update AH order: {e}")
-            return None
-
-    def get_recently_closed_cycles(self, account_id, timestamp):
-        """
-        Get cycles that were recently closed after the specified timestamp.
-        Used to check for cycles that might have been incorrectly marked as closed.
-
-        Args:
-            account_id: The account ID to filter by
-            timestamp: Unix timestamp to filter by (get cycles closed after this time)
-
-        Returns:
-            List of cycles
-        """
-        with Session(self.engine) as session:
-            statement = select(AHCycle).where(
-                and_(
-                    AHCycle.account == account_id,
-                    AHCycle.is_closed == True,
-                    # If we had a closed_at timestamp field, we would use it here
-                    # For now, just get all closed cycles
-                )
-            )
-            cycles = session.exec(statement).all()
-            return cycles
+            if self.supabase_service:
+                result = await self.supabase_service.get_cycles_by_account(account_id)
+                return result or []
+        except Exception as e:
+            logger.error(f"Error in async get_cycles_by_account: {e}")
+        return []

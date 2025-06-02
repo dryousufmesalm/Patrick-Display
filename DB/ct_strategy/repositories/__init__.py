@@ -1,0 +1,3 @@
+"""
+CycleTrader strategy repositories
+"""

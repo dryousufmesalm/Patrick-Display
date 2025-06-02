@@ -3,8 +3,6 @@ import asyncio
 from Views.auth import auth
 from Views.globals.app_logger import app_logger
 from Views.globals.app_router import  AppRoutes
-from DB.mt5_login.repositories.mt5_login_repo import MT5LoginRepo
-from DB.db_engine import engine
 from fletx import Xview
 from helpers.store import store
 from helpers.actions_creators import GetUser

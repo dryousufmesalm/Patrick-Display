@@ -1,0 +1,41 @@
+# Supabase Configuration
+SUPABASE_URL=https://mkccvhogjqwmcqjuxfzv.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rY2N2aG9nanF3bWNxanV4Znp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNTMyODksImV4cCI6MjA2MjcyOTI4OX0.lrRfMJhFhVU1W4gNx8Rdu4LP36an0iCy3XyFNJ5ktDY
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rY2N2aG9nanF3bWNxanV4Znp2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzE1MzI4OSwiZXhwIjoyMDYyNzI5Mjg5fQ.XrXgdkQyy-EVSGuh5KOTy3wWo7Z-pyokinL4EOe9Vk4
+
+# Direct Database Connection (for high-frequency operations)
+DATABASE_URL=postgresql://postgres.mkccvhogjqwmcqjuxfzv:1MUSD$!MayB@aws-0-eu-central-1.pooler.supabase.com:5432/postgres
+
+# PayloadCMS Integration
+PAYLOAD_SECRET=cafbc51ead205a6691a0413b
+PAYLOAD_SERVER_URL=http://localhost:3000/
+
+# MetaTrader Configuration
+MT5_SERVER=your_mt5_server
+MT5_LOGIN=your_mt5_login
+MT5_PASSWORD=your_mt5_password
+
+# Logging Configuration
+LOG_LEVEL=INFO
+LOG_FILE=patrick_display.log
+
+# Patrick Display Configuration
+DISPLAY_PORT=8000
+DISPLAY_HOST=localhost
+
+# Real-time Configuration
+ENABLE_REALTIME=true
+REALTIME_HEARTBEAT_INTERVAL=30
+
+# Performance Configuration
+DB_POOL_MIN_SIZE=5
+DB_POOL_MAX_SIZE=20
+QUERY_TIMEOUT=60
+
+# Security Configuration
+API_KEY=your_api_key_for_display_access
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
+
+# Development Settings
+DEBUG=false
+ENVIRONMENT=development 

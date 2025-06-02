@@ -1,0 +1,3 @@
+"""
+AdaptiveHedging strategy database package
+"""
