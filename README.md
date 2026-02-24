@@ -1,21 +1,22 @@
-## Setup
+﻿# Patrick Display
 
-Modify the .env file
+Display and visualization tooling for trading/data.
 
-## Install the dependencies
+![Language](https://img.shields.io/badge/lang-Python-blue)
 
-```bash
-uv sync
-```
+## What it does
 
-or
+Tools for displaying trading or market data.
 
-```bash
-pip install -r requirements.txt
-```
+## Tech stack
 
-## Run the Program
+Python
 
-```bash
-flet run main.py
-```
+## How to use
+
+Run the display module as needed for your setup.
+
+---
+
+**Part of [Yousuf Mesalm](https://github.com/dryousufmesalm) â€” Trading system engineer, full stack quant developer.**
+
